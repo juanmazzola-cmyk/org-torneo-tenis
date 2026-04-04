@@ -45,14 +45,6 @@
                 </a>
             </div>
 
-            {{-- Volver al sistema de reservas --}}
-            <div class="px-3 pb-2 pt-1">
-                <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
-                   class="flex items-center justify-center gap-2 bg-[#0057a8] hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-xl transition w-full">
-                    ← Volver al Sistema de Reservas
-                </a>
-            </div>
-
             {{-- Torneos activos --}}
             <div class="px-3 pb-3 pt-1 space-y-2">
                 @if($torneos->isEmpty())
@@ -118,6 +110,14 @@
                     @endforeach
                 @endif
             </div>
+            {{-- Volver al sistema de reservas --}}
+            <div class="px-3 pt-2 pb-3 border-t border-white/10 mt-1">
+                <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
+                   class="flex items-center justify-center gap-2 bg-[#0057a8] hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-xl transition w-full">
+                    ← Volver al Sistema de Reservas
+                </a>
+            </div>
+
         </div>
     </div>
 
