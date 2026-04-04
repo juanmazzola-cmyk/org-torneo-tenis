@@ -1,5 +1,5 @@
-<div wire:poll.30s class="min-h-[100dvh] flex flex-col"
-     style="background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover no-repeat;">
+<div wire:poll.30s class="flex flex-col"
+     style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
     {{-- Header compacto --}}
     <div class="text-center pt-4 pb-2 px-4 flex-shrink-0">
@@ -14,7 +14,7 @@
     </div>
 
     {{-- Panel Online --}}
-    <div class="flex-1 max-w-2xl mx-auto w-full px-3 pb-4 min-h-0 overflow-y-auto">
+    <div class="max-w-2xl mx-auto w-full px-3 pb-6">
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
 
             {{-- Cabecera del panel --}}
