@@ -35,7 +35,15 @@
         $totalRoundsTemp = count($roundsTemp);
         $bracketW = ($totalRoundsTemp * 200) + (($totalRoundsTemp - 1) * 40) + 64;
     @endphp
-    <div class="flex-1" x-data="{ ajustado: false }" style="touch-action: pan-x pan-y pinch-zoom;">
+    <div class="flex-1" x-data="{ ajustado: true }" x-init="
+        const b = document.getElementById('bracket-inner');
+        if (b) {
+            const escala = (window.innerWidth - 16) / {{ $bracketW }};
+            b.style.transform = 'scale(' + escala + ')';
+            b.style.transformOrigin = 'top left';
+            b.parentElement.style.height = (b.offsetHeight * escala) + 'px';
+        }
+    " style="touch-action: pan-x pan-y pinch-zoom;">
         <div class="px-4 pt-2 pb-1">
             <button @click="
                 ajustado = !ajustado;
