@@ -14,7 +14,7 @@
     </div>
 
     {{-- Panel Online --}}
-    <div class="flex-1 max-w-2xl mx-auto w-full px-3 min-h-0 overflow-y-auto">
+    <div class="flex-1 max-w-2xl mx-auto w-full px-3 pb-4 min-h-0 overflow-y-auto">
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
 
             {{-- Cabecera del panel --}}
@@ -54,7 +54,6 @@
                 @else
                     @foreach($torneos as $torneo)
                         <div class="border border-red-500 rounded-xl overflow-hidden">
-
                             <div class="bg-white/10 px-3 py-2 flex items-center justify-between gap-2">
                                 <div class="min-w-0">
                                     <p class="text-white font-bold text-xs truncate">{{ $torneo->nombre }}</p>
@@ -65,40 +64,27 @@
                                         </p>
                                     @endif
                                 </div>
-                                @php
-                                    $tieneCampeon = $torneo->draws->contains(fn($d) => $d->partidos->isNotEmpty());
-                                @endphp
+                                @php $tieneCampeon = $torneo->draws->contains(fn($d) => $d->partidos->isNotEmpty()); @endphp
                                 @if($tieneCampeon)
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">
-                                        Finalizado
-                                    </span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">Finalizado</span>
                                 @elseif($torneo->estado === 'activo')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">
-                                        Torneo en curso
-                                    </span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">Torneo en curso</span>
                                 @endif
                             </div>
-
                             @if($torneo->draws->isEmpty())
-                                <div class="px-3 py-2 text-green-300/60 text-xs italic">
-                                    Draw no disponible aún.
-                                </div>
+                                <div class="px-3 py-2 text-green-300/60 text-xs italic">Draw no disponible aún.</div>
                             @else
                                 <div class="divide-y divide-white/10">
                                     @foreach($torneo->draws as $draw)
                                         <div class="px-3 py-2 flex items-center gap-2">
-                                            <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">
-                                                Cat. {{ $draw->categoria->nombre }}
-                                            </p>
+                                            <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
                                             <div class="flex gap-1.5 shrink-0">
                                                 <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}" wire:navigate
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20
-                                                          text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     📋 Resultados
                                                 </a>
                                                 <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20
-                                                          text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     🎯 Draw
                                                 </a>
                                             </div>
@@ -110,23 +96,22 @@
                     @endforeach
                 @endif
             </div>
-            {{-- Volver al sistema de reservas --}}
-            <div class="px-3 pt-2 pb-3 border-t border-white/10 mt-1">
+
+            {{-- Volver + Admin --}}
+            <div class="px-3 pt-1 pb-3 border-t border-white/10 space-y-2">
                 <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
                    class="flex items-center justify-center gap-2 bg-[#0057a8] hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-xl transition w-full">
                     ← Volver al Sistema de Reservas
                 </a>
+                <div class="text-center">
+                    <a href="{{ route('admin.login') }}" wire:navigate
+                       class="text-white/40 hover:text-white/70 text-xs transition">
+                        🔐 Panel Administrador → Ingreso al panel
+                    </a>
+                </div>
             </div>
 
         </div>
-    </div>
-
-    {{-- Pie: admin --}}
-    <div class="flex-shrink-0 px-4 py-3 text-center">
-        <a href="{{ route('admin.login') }}" wire:navigate
-           class="text-white/40 hover:text-white/70 text-xs transition">
-            🔐 Panel Administrador → Ingreso al panel
-        </a>
     </div>
 
 </div>

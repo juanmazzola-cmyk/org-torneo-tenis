@@ -7,7 +7,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-black min-h-screen">
+<body class="bg-black" style="margin:0;padding:0;overflow:hidden">
     {{ $slot }}
     @livewireScripts
 </body>
