@@ -45,6 +45,14 @@
                 </a>
             </div>
 
+            {{-- Volver al sistema de reservas --}}
+            <div class="px-3 pb-2 pt-1">
+                <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
+                   class="flex items-center justify-center gap-2 bg-[#0057a8] hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-xl transition w-full">
+                    ← Volver al Sistema de Reservas
+                </a>
+            </div>
+
             {{-- Torneos activos --}}
             <div class="px-3 pb-3 pt-1 space-y-2">
                 @if($torneos->isEmpty())
@@ -113,12 +121,8 @@
         </div>
     </div>
 
-    {{-- Pie: volver a reservas + admin --}}
-    <div class="flex-shrink-0 px-4 py-3 flex flex-col items-center gap-2">
-        <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
-           class="flex items-center gap-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition w-full max-w-sm justify-center">
-            ← Volver al Sistema de Reservas
-        </a>
+    {{-- Pie: admin --}}
+    <div class="flex-shrink-0 px-4 py-3 text-center">
         <a href="{{ route('admin.login') }}" wire:navigate
            class="text-white/40 hover:text-white/70 text-xs transition">
             🔐 Panel Administrador → Ingreso al panel
