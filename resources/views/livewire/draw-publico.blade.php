@@ -30,6 +30,11 @@
     </div>
 
     {{-- Bracket --}}
+    @php
+        $roundsTemp  = $partidos->sortKeysDesc(SORT_NUMERIC);
+        $totalRoundsTemp = count($roundsTemp);
+        $bracketW = ($totalRoundsTemp * 200) + (($totalRoundsTemp - 1) * 40) + 64;
+    @endphp
     <div class="flex-1" x-data="{ ajustado: false }" style="touch-action: pan-x pan-y pinch-zoom;">
         <div class="px-4 pt-2 pb-1">
             <button @click="
