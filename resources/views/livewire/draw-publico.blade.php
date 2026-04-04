@@ -30,34 +30,26 @@
     </div>
 
     {{-- Bracket --}}
-    <div class="flex-1 overflow-x-auto" style="touch-action: pan-x pan-y pinch-zoom;"
-         x-data="{
-             ajustado: false,
-             escala: 1,
-             ajustar() {
-                 const contenedor = this.$el;
-                 const bracket = contenedor.querySelector('#bracket-inner');
-                 if (!bracket) return;
-                 if (this.ajustado) {
-                     bracket.style.transform = 'scale(1)';
-                     bracket.style.transformOrigin = 'top left';
-                     this.escala = 1;
-                     this.ajustado = false;
-                 } else {
-                     const escala = (window.innerWidth - 32) / bracket.scrollWidth;
-                     bracket.style.transform = 'scale(' + escala + ')';
-                     bracket.style.transformOrigin = 'top left';
-                     this.escala = escala;
-                     this.ajustado = true;
-                 }
-             }
-         }">
+    <div class="flex-1" x-data="{ ajustado: false }" style="touch-action: pan-x pan-y pinch-zoom;">
         <div class="px-4 pt-2 pb-1">
-            <button @click="ajustar()" type="button"
+            <button @click="
+                ajustado = !ajustado;
+                const b = document.getElementById('bracket-inner');
+                if (ajustado) {
+                    const escala = (window.innerWidth - 32) / b.offsetWidth;
+                    b.style.transform = 'scale(' + escala + ')';
+                    b.style.transformOrigin = 'top left';
+                    b.parentElement.style.height = (b.offsetHeight * escala) + 'px';
+                } else {
+                    b.style.transform = '';
+                    b.parentElement.style.height = '';
+                }
+            " type="button"
                 class="text-xs bg-white/20 hover:bg-white/30 text-white border border-white/30 px-3 py-1.5 rounded-lg transition">
                 <span x-text="ajustado ? '🔍 Tamaño normal' : '🗺 Ver completo'"></span>
             </button>
         </div>
+        <div class="overflow-x-auto">
         <div id="bracket-inner" class="p-4 md:p-8" style="transform-origin: top left;">
 
         @php
@@ -165,6 +157,7 @@
             @endforeach
         </div>
         </div>{{-- cierre bracket-inner --}}
+        </div>{{-- cierre overflow-x-auto --}}
     </div>
 
     {{-- Footer --}}
