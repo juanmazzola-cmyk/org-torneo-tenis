@@ -1,4 +1,4 @@
-<div wire:poll.30s class="h-[100dvh] flex flex-col"
+<div wire:poll.30s class="min-h-[100dvh] flex flex-col"
      style="background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover no-repeat;">
 
     {{-- Header compacto --}}
