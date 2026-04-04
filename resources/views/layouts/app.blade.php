@@ -7,116 +7,100 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <style>
-        .nav-desktop { display: none; }
-        .nav-hamburger { display: flex; }
-        .nav-mobile-menu { display: none; }
-        @media (min-width: 768px) {
-            .nav-desktop { display: flex; }
-            .nav-hamburger { display: none; }
-            .nav-mobile-menu { display: none !important; }
+        #nav-links { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+        #nav-hamburger { display: none; }
+        #nav-dropdown { display: none; border-top: 1px solid #16a34a; background: #166534; }
+        @media (max-width: 767px) {
+            #nav-links { display: none; }
+            #nav-hamburger { display: flex; }
         }
+        .nav-link {
+            display: block; padding: 12px 12px; border-radius: 6px;
+            color: white; text-decoration: none; font-size: .9rem;
+        }
+        .nav-link:hover { background: #15803d; }
+        .nav-link.active { background: #16a34a; font-weight: 700; }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen" style="overflow-x:hidden">
+<body style="background:#f3f4f6; min-height:100vh; overflow-x:hidden; margin:0">
 
-    <nav class="bg-green-800 text-white shadow-lg" x-data="{ open: false }">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex items-center justify-between" style="height:64px">
+    <!-- Navbar -->
+    <nav style="background:#166534; color:white; box-shadow:0 2px 8px rgba(0,0,0,.3)">
+        <div style="max-width:1280px; margin:0 auto; padding:0 16px">
+            <div style="display:flex; align-items:center; justify-content:space-between; height:64px">
 
-                {{-- Logo --}}
-                <a href="{{ route('torneos') }}" class="flex items-center gap-2 hover:opacity-80 transition" style="flex-shrink:0">
-                    <span style="font-size:1.5rem">🎾</span>
-                    <span style="font-size:1.1rem; font-weight:700">Panel Admin</span>
+                <!-- Logo -->
+                <a href="{{ route('torneos') }}"
+                   style="display:flex; align-items:center; gap:8px; text-decoration:none; color:white; font-size:1.1rem; font-weight:700; flex-shrink:0">
+                    🎾 Panel Admin
                 </a>
 
-                {{-- Links desktop --}}
-                <div class="nav-desktop items-center gap-1">
+                <!-- Links desktop -->
+                <div id="nav-links">
                     <a href="{{ route('jugadores') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('jugadores') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('jugadores') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('jugadores') ? '#16a34a' : 'transparent' }}'">
                         Jugadores
                     </a>
                     <a href="{{ route('categorias') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('categorias') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('categorias') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('categorias') ? '#16a34a' : 'transparent' }}'">
                         Categorías
                     </a>
                     <a href="{{ route('torneos') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('torneos') || request()->routeIs('torneo.*') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('torneos') || request()->routeIs('torneo.*') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('torneos') || request()->routeIs('torneo.*') ? '#16a34a' : 'transparent' }}'">
                         Torneos
                     </a>
                     <a href="{{ route('ranking') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('ranking') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('ranking') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('ranking') ? '#16a34a' : 'transparent' }}'">
                         Ranking
                     </a>
                     <a href="{{ route('config') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('config') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('config') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('config') ? '#16a34a' : 'transparent' }}'">
                         Config
                     </a>
                     <a href="{{ route('whatsapp') }}"
-                       class="px-3 py-2 rounded hover:bg-green-700 transition text-sm {{ request()->routeIs('whatsapp') ? 'bg-green-600 font-semibold' : '' }}">
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('whatsapp') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('whatsapp') ? '#16a34a' : 'transparent' }}'">
                         WhatsApp
                     </a>
-                    <div style="width:1px; height:24px; background:#16a34a; margin:0 6px"></div>
-                    <form method="POST" action="{{ route('admin.logout') }}">
+                    <div style="width:1px; height:24px; background:#4ade80; margin:0 6px"></div>
+                    <form method="POST" action="{{ route('admin.logout') }}" style="margin:0">
                         @csrf
-                        <button type="submit" class="px-3 py-2 rounded hover:bg-green-700 transition text-sm" style="color:#86efac">
+                        <button type="submit"
+                                style="padding:8px 12px; border-radius:6px; border:none; background:transparent; color:#86efac; cursor:pointer; font-size:.9rem"
+                                onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='transparent'">
                             Salir ↩
                         </button>
                     </form>
                 </div>
 
-                {{-- Hamburger --}}
-                <button class="nav-hamburger flex-col justify-center items-center hover:bg-green-700 transition"
-                        @click="open = !open" type="button"
-                        style="width:40px; height:40px; border-radius:6px; border:none; cursor:pointer; background:transparent; gap:5px">
-                    <span style="display:block; width:20px; height:2px; background:white; transition:transform .2s"
-                          :style="open ? 'transform:rotate(45deg) translateY(7px)' : ''"></span>
-                    <span style="display:block; width:20px; height:2px; background:white; transition:opacity .2s"
-                          :style="open ? 'opacity:0' : ''"></span>
-                    <span style="display:block; width:20px; height:2px; background:white; transition:transform .2s"
-                          :style="open ? 'transform:rotate(-45deg) translateY(-7px)' : ''"></span>
+                <!-- Hamburger -->
+                <button id="nav-hamburger" onclick="toggleMenu()" type="button"
+                        style="flex-direction:column; justify-content:center; align-items:center; width:44px; height:44px; border-radius:6px; border:none; background:transparent; cursor:pointer; gap:5px">
+                    <span id="hb1" style="display:block; width:22px; height:2px; background:white; transition:transform .25s, opacity .25s"></span>
+                    <span id="hb2" style="display:block; width:22px; height:2px; background:white; transition:opacity .25s"></span>
+                    <span id="hb3" style="display:block; width:22px; height:2px; background:white; transition:transform .25s"></span>
                 </button>
             </div>
         </div>
 
-        {{-- Dropdown mobile --}}
-        <div class="nav-mobile-menu" :style="open ? 'display:block' : 'display:none'"
-             style="border-top:1px solid #16a34a; background:#166534">
+        <!-- Dropdown mobile -->
+        <div id="nav-dropdown">
             <div style="padding:8px 16px 12px">
-                <a href="{{ route('jugadores') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('jugadores') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    👤 Jugadores
-                </a>
-                <a href="{{ route('categorias') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('categorias') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    🏷️ Categorías
-                </a>
-                <a href="{{ route('torneos') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('torneos') || request()->routeIs('torneo.*') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    🏆 Torneos
-                </a>
-                <a href="{{ route('ranking') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('ranking') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    📊 Ranking
-                </a>
-                <a href="{{ route('config') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('config') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    ⚙️ Config
-                </a>
-                <a href="{{ route('whatsapp') }}"
-                   class="flex items-center gap-2 px-3 rounded hover:bg-green-700 transition {{ request()->routeIs('whatsapp') ? 'bg-green-600 font-semibold' : '' }}"
-                   style="padding-top:12px; padding-bottom:12px; font-size:.9rem">
-                    💬 WhatsApp
-                </a>
-                <div style="border-top:1px solid #16a34a; margin:8px 0 4px"></div>
-                <form method="POST" action="{{ route('admin.logout') }}">
+                <a href="{{ route('jugadores') }}" class="nav-link {{ request()->routeIs('jugadores') ? 'active' : '' }}">👤 Jugadores</a>
+                <a href="{{ route('categorias') }}" class="nav-link {{ request()->routeIs('categorias') ? 'active' : '' }}">🏷️ Categorías</a>
+                <a href="{{ route('torneos') }}" class="nav-link {{ request()->routeIs('torneos') || request()->routeIs('torneo.*') ? 'active' : '' }}">🏆 Torneos</a>
+                <a href="{{ route('ranking') }}" class="nav-link {{ request()->routeIs('ranking') ? 'active' : '' }}">📊 Ranking</a>
+                <a href="{{ route('config') }}" class="nav-link {{ request()->routeIs('config') ? 'active' : '' }}">⚙️ Config</a>
+                <a href="{{ route('whatsapp') }}" class="nav-link {{ request()->routeIs('whatsapp') ? 'active' : '' }}">💬 WhatsApp</a>
+                <div style="border-top:1px solid #4ade80; margin:8px 0 4px"></div>
+                <form method="POST" action="{{ route('admin.logout') }}" style="margin:0">
                     @csrf
-                    <button type="submit" class="flex items-center gap-2 w-full px-3 rounded hover:bg-green-700 transition text-left"
-                            style="padding-top:12px; padding-bottom:12px; font-size:.9rem; color:#86efac; background:transparent; border:none; cursor:pointer">
+                    <button type="submit" class="nav-link" style="width:100%; text-align:left; border:none; cursor:pointer; color:#86efac; background:transparent">
                         ↩ Salir
                     </button>
                 </form>
@@ -124,31 +108,21 @@
         </div>
     </nav>
 
-    <!-- Barra de navegación secundaria (mobile): página actual + volver -->
-    <div style="background:#f0fdf4; border-bottom:1px solid #bbf7d0; padding:8px 16px; display:flex; align-items:center; gap:8px">
-        <a href="{{ route('torneos') }}"
-           style="font-size:.8rem; color:#15803d; text-decoration:none; font-weight:600">
-            ← Menú principal
-        </a>
-        <span style="color:#86efac; font-size:.8rem">|</span>
-        <span style="font-size:.8rem; color:#6b7280">
-            @if(request()->routeIs('jugadores')) Jugadores
-            @elseif(request()->routeIs('categorias')) Categorías
-            @elseif(request()->routeIs('torneos')) Torneos
-            @elseif(request()->routeIs('torneo.detalle')) Detalle de torneo
-            @elseif(request()->routeIs('torneo.draw')) Draw
-            @elseif(request()->routeIs('ranking')) Ranking
-            @elseif(request()->routeIs('config')) Configuración
-            @elseif(request()->routeIs('whatsapp')) WhatsApp
-            @else Panel Admin
-            @endif
-        </span>
-    </div>
-
     <!-- Contenido -->
-    <main class="max-w-7xl mx-auto px-4 py-6">
+    <main style="max-width:1280px; margin:0 auto; padding:16px">
         {{ $slot }}
     </main>
+
+    <script>
+        var menuOpen = false;
+        function toggleMenu() {
+            menuOpen = !menuOpen;
+            document.getElementById('nav-dropdown').style.display = menuOpen ? 'block' : 'none';
+            document.getElementById('hb1').style.transform = menuOpen ? 'rotate(45deg) translateY(7px)' : '';
+            document.getElementById('hb2').style.opacity = menuOpen ? '0' : '1';
+            document.getElementById('hb3').style.transform = menuOpen ? 'rotate(-45deg) translateY(-7px)' : '';
+        }
+    </script>
 
     @livewireScripts
 </body>
