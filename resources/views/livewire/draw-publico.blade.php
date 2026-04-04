@@ -30,7 +30,7 @@
     </div>
 
     {{-- Bracket --}}
-    <div class="flex-1 p-4 md:p-8 overflow-x-auto">
+    <div class="flex-1 p-4 md:p-8 overflow-x-auto" style="touch-action: pan-x pan-y pinch-zoom;">
 
         @php
             $rounds      = $partidos->sortKeysDesc(SORT_NUMERIC);
