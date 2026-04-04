@@ -1,8 +1,8 @@
-<div wire:poll.30s class="min-h-screen flex flex-col"
+<div wire:poll.30s class="h-[100dvh] flex flex-col"
      style="background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover no-repeat;">
 
     {{-- Header compacto --}}
-    <div class="text-center pt-5 pb-3 px-4">
+    <div class="text-center pt-4 pb-2 px-4 flex-shrink-0">
         <div class="text-3xl mb-1">🎾</div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">
             {{ $clubNombre }}
@@ -14,7 +14,7 @@
     </div>
 
     {{-- Panel Online --}}
-    <div class="flex-1 max-w-2xl mx-auto w-full px-3 pb-3">
+    <div class="flex-1 max-w-2xl mx-auto w-full px-3 min-h-0 overflow-y-auto">
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
 
             {{-- Cabecera del panel --}}
@@ -113,19 +113,15 @@
         </div>
     </div>
 
-    {{-- Panel Administrador (discreto, al pie) --}}
-    <div class="text-center pb-1 px-4">
-        <a href="{{ route('admin.login') }}" wire:navigate
-           class="inline-flex items-center gap-2 text-white/40 hover:text-white/70 text-xs transition">
-            🔐 Panel Administrador → Ingreso al panel
-        </a>
-    </div>
-
-    {{-- Volver al sistema de reservas --}}
-    <div class="text-center pb-4 px-4">
+    {{-- Pie: volver a reservas + admin --}}
+    <div class="flex-shrink-0 px-4 py-3 flex flex-col items-center gap-2">
         <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
-           class="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs transition">
+           class="flex items-center gap-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition w-full max-w-sm justify-center">
             ← Volver al Sistema de Reservas
+        </a>
+        <a href="{{ route('admin.login') }}" wire:navigate
+           class="text-white/40 hover:text-white/70 text-xs transition">
+            🔐 Panel Administrador → Ingreso al panel
         </a>
     </div>
 
