@@ -36,7 +36,7 @@
                 ajustado = !ajustado;
                 const b = document.getElementById('bracket-inner');
                 if (ajustado) {
-                    const escala = (window.innerWidth - 32) / b.offsetWidth;
+                    const escala = (window.innerWidth - 16) / {{ $bracketW }};
                     b.style.transform = 'scale(' + escala + ')';
                     b.style.transformOrigin = 'top left';
                     b.parentElement.style.height = (b.offsetHeight * escala) + 'px';
@@ -60,6 +60,8 @@
             $nFirstRound = count($roundsArr[0]);
             $slotHeight  = 110;
             $containerH  = $nFirstRound * $slotHeight;
+            // Ancho real del bracket: rondas * 200px + conectores * 40px + padding 64px
+            $bracketW    = ($totalRounds * 200) + (($totalRounds - 1) * 40) + 64;
 
             $nombreRonda = function(int $ronda, int $tamano) {
                 return match($ronda) {
