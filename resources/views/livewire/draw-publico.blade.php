@@ -1,4 +1,4 @@
-<div wire:poll.20s class="min-h-screen flex flex-col" style="background: linear-gradient(160deg, #166534 0%, #15803d 40%, #16a34a 70%, #22c55e 100%)">
+<div wire:poll.20s class="min-h-screen flex flex-col bg-white">
 
     {{-- Header --}}
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
@@ -58,7 +58,7 @@
                     b.parentElement.style.height = '';
                 }
             " type="button"
-                class="text-xs bg-white/20 hover:bg-white/30 text-white border border-white/30 px-3 py-1.5 rounded-lg transition">
+                class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg transition">
                 <span x-text="ajustado ? '🔍 Tamaño normal' : '🗺 Ver completo'"></span>
             </button>
         </div>
@@ -93,7 +93,7 @@
         <div class="flex mb-3" style="gap:0">
             @foreach($roundsArr as $ri => $rMatches)
                 <div style="width:200px; flex-shrink:0" class="text-center">
-                    <span class="text-xs font-bold text-green-300 uppercase tracking-wider">
+                    <span class="text-xs font-bold text-green-700 uppercase tracking-wider">
                         {{ $nombreRonda((int)$roundKeys[$ri], (int)$draw->tamano) }}
                     </span>
                 </div>
@@ -112,40 +112,40 @@
                 <div class="flex flex-col" style="width:200px; flex-shrink:0">
                     @foreach($rMatches as $partido)
                         <div class="flex-1 flex items-center" style="padding:4px 0">
-                            <div class="w-full rounded-xl overflow-hidden shadow-lg border
-                                {{ $partido->ganador_id ? 'border-green-400' : 'border-white/20' }}
-                                bg-white/10 backdrop-blur-sm">
+                            <div class="w-full rounded-xl overflow-hidden shadow border
+                                {{ $partido->ganador_id ? 'border-green-400' : 'border-gray-200' }}
+                                bg-white">
 
                                 {{-- Jugador 1 --}}
-                                <div class="px-3 py-2 text-sm border-b border-white/10 flex items-center gap-1
+                                <div class="px-3 py-2 text-sm border-b border-gray-100 flex items-center gap-1
                                     {{ $partido->ganador_id == $partido->jugador1_id
-                                        ? 'bg-green-500/30 font-bold text-white'
+                                        ? 'bg-green-100 font-bold text-green-800'
                                         : ($partido->ganador_id
-                                            ? 'text-white/40'
-                                            : 'text-white') }}">
+                                            ? 'text-gray-400'
+                                            : 'text-gray-800') }}">
                                     @if($partido->jugador1)
                                         {{ $partido->jugador1->apellido }}, {{ $partido->jugador1->nombre }}
                                     @else
-                                        <span class="text-white/25 italic text-xs">Por definir</span>
+                                        <span class="text-gray-300 italic text-xs">Por definir</span>
                                     @endif
                                 </div>
 
                                 {{-- Jugador 2 --}}
-                                <div class="px-3 py-2 text-sm border-b border-white/10 flex items-center gap-1
+                                <div class="px-3 py-2 text-sm border-b border-gray-100 flex items-center gap-1
                                     {{ $partido->ganador_id == $partido->jugador2_id
-                                        ? 'bg-green-500/30 font-bold text-white'
+                                        ? 'bg-green-100 font-bold text-green-800'
                                         : ($partido->ganador_id
-                                            ? 'text-white/40'
-                                            : 'text-white') }}">
+                                            ? 'text-gray-400'
+                                            : 'text-gray-800') }}">
                                     @if($partido->jugador2)
                                         {{ $partido->jugador2->apellido }}, {{ $partido->jugador2->nombre }}
                                     @else
-                                        <span class="text-white/25 italic text-xs">Por definir</span>
+                                        <span class="text-gray-300 italic text-xs">Por definir</span>
                                     @endif
                                 </div>
 
                                 {{-- Resultado --}}
-                                <div class="px-3 py-1 bg-black/20 text-xs font-bold text-green-300 text-right min-h-[22px]">
+                                <div class="px-3 py-1 bg-gray-50 text-xs font-bold text-green-700 text-right min-h-[22px]">
                                     {{ $partido->resultado ?? '' }}
                                 </div>
 
@@ -176,7 +176,7 @@
     </div>
 
     {{-- Footer --}}
-    <div class="text-center pb-5 text-green-700 text-xs">
+    <div class="text-center pb-5 text-gray-400 text-xs">
         Se actualiza automáticamente cada 20 segundos
     </div>
 

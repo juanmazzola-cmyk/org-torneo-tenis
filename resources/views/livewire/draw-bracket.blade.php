@@ -31,6 +31,7 @@
         $nFirstRound   = count($roundsArr[0]);       // 4 para draw de 8
         $slotHeight    = 110;                        // px por slot de primera ronda
         $containerH    = $nFirstRound * $slotHeight; // alto total del bracket
+        $bracketWAdmin = ($totalRounds * 200) + (($totalRounds - 1) * 40) + 64;
 
         $nombreRonda = function(int $ronda, int $tamano) {
             return match($ronda) {
@@ -45,7 +46,36 @@
         };
     @endphp
 
-    <div class="bg-white rounded-xl shadow p-6 overflow-x-auto">
+    <div class="bg-white rounded-xl shadow p-4 md:p-6" x-data="{ ajustado: false }" x-init="
+        const b = document.getElementById('bracket-admin-inner');
+        if (b && window.innerWidth < 768) {
+            ajustado = true;
+            const escala = (window.innerWidth - 48) / {{ $bracketWAdmin }};
+            b.style.transform = 'scale(' + escala + ')';
+            b.style.transformOrigin = 'top left';
+            b.parentElement.style.height = (b.offsetHeight * escala) + 'px';
+        }
+    ">
+        <div class="mb-3 md:hidden">
+            <button @click="
+                ajustado = !ajustado;
+                const b = document.getElementById('bracket-admin-inner');
+                if (ajustado) {
+                    const escala = (window.innerWidth - 48) / {{ $bracketWAdmin }};
+                    b.style.transform = 'scale(' + escala + ')';
+                    b.style.transformOrigin = 'top left';
+                    b.parentElement.style.height = (b.offsetHeight * escala) + 'px';
+                } else {
+                    b.style.transform = '';
+                    b.parentElement.style.height = '';
+                }
+            " type="button"
+                class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg transition">
+                <span x-text="ajustado ? '🔍 Tamaño normal' : '🗺 Ver completo'"></span>
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+        <div id="bracket-admin-inner" style="transform-origin: top left">
         {{-- Cabecera de rondas --}}
         <div class="flex mb-3" style="gap: 0">
             @foreach($roundsArr as $ri => $rMatches)
@@ -217,7 +247,8 @@
 
             @endforeach
         </div>
-    </div>
+        </div>{{-- cierre overflow-x-auto --}}
+    </div>{{-- cierre bracket admin --}}
 
     {{-- Modal asignar jugador (primera ronda / sorteo) --}}
     @if($asignandoPartidoId)

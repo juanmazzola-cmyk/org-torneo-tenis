@@ -150,8 +150,8 @@
                 </select>
             </div>
 
-            <div class="bg-white rounded-xl shadow overflow-hidden">
-                <table class="w-full">
+            <div class="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
+                <table class="w-full min-w-[600px]">
                     <thead class="bg-gray-50 border-b">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Apellido y Nombre</th>
