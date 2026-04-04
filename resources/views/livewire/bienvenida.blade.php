@@ -114,10 +114,18 @@
     </div>
 
     {{-- Panel Administrador (discreto, al pie) --}}
-    <div class="text-center py-3 px-4">
+    <div class="text-center pb-1 px-4">
         <a href="{{ route('admin.login') }}" wire:navigate
            class="inline-flex items-center gap-2 text-white/40 hover:text-white/70 text-xs transition">
             🔐 Panel Administrador → Ingreso al panel
+        </a>
+    </div>
+
+    {{-- Volver al sistema de reservas --}}
+    <div class="text-center pb-4 px-4">
+        <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
+           class="inline-flex items-center gap-2 text-white/60 hover:text-white text-xs transition">
+            ← Volver al Sistema de Reservas
         </a>
     </div>
 
