@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version && composer --version 2>/dev/null || echo \"PHP/Composer not in PATH\")",
+      "Bash(which composer:*)",
+      "Read(//c/Users/jmazz/AppData/Roaming/Composer/vendor/**)",
+      "Read(//c/ProgramData/**)",
+      "Bash(/c/xampp/php/php.exe -r \"echo 'PHP works';\" 2>/dev/null && echo \"XAMPP PHP OK\")",
+      "Bash(find /c/xampp/php -name \"composer*\" 2>/dev/null; find /c/Users/jmazz -name \"composer.phar\" 2>/dev/null | head -3)",
+      "Bash(node --version && npm --version)",
+      "Bash(/c/xampp/php/php.exe -r \"copy\\('https://getcomposer.org/installer', 'composer-setup.php'\\);\" && echo \"Downloaded\" || echo \"Failed to download\")",
+      "Bash(/c/xampp/php/php.exe composer-setup.php --install-dir=/c/xampp/php --filename=composer && echo \"Composer installed\")",
+      "Bash(rm composer-setup.php && /c/xampp/php/php.exe /c/xampp/php/composer --version)",
+      "Bash(cd /c/xampp/htdocs && /c/xampp/php/php.exe /c/xampp/php/composer create-project laravel/laravel org-torneo-tenis --no-interaction 2>&1 | tail -20)",
+      "Bash(cd /c/xampp/htdocs && /c/xampp/php/php.exe /c/xampp/php/composer create-project laravel/laravel _tmp-torneo --no-interaction 2>&1 | tail -10)",
+      "Bash(cp -r /c/xampp/htdocs/_tmp-torneo/. /c/xampp/htdocs/org-torneo-tenis/ && rm -rf /c/xampp/htdocs/_tmp-torneo && echo \"Listo\")",
+      "Bash(/c/xampp/php/php.exe /c/xampp/php/composer require livewire/livewire maatwebsite/excel --no-interaction 2>&1 | tail -15)",
+      "Bash(/c/xampp/php/php.exe -m | grep -E \"gd|zip\")",
+      "Bash(/c/xampp/php/php.exe /c/xampp/php/composer require livewire/livewire maatwebsite/excel --no-interaction 2>&1 | tail -10)",
+      "Bash(npm install:*)",
+      "Bash(/c/xampp/mysql/bin/mysql.exe -u root -e \"CREATE DATABASE IF NOT EXISTS torneo_tenis CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\" && echo \"BD creada\")",
+      "Bash(/c/xampp/php/php.exe artisan:*)",
+      "Bash(/c/xampp/php/php.exe /c/xampp/php/composer show livewire/livewire 2>&1 | head -5)",
+      "Bash(npm run:*)",
+      "Bash(/c/xampp/php/php.exe -r \"\nrequire 'vendor/autoload.php';\n\\\\$models = ['Categoria','Jugador','Torneo','Inscripcion','Draw','Partido','Ranking','Config'];\nforeach\\(\\\\$models as \\\\$m\\) {\n    \\\\$class = 'App\\\\\\\\\\\\\\\\Models\\\\\\\\\\\\\\\\' . \\\\$m;\n    \\\\$obj = new \\\\$class\\(\\);\n    echo \\\\$m . ' => ' . \\\\$obj->getTable\\(\\) . PHP_EOL;\n}\n\" 2>&1)",
+      "Bash(ls C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png 2>/dev/null || dir \"C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png\" 2>/dev/null)"
+    ]
+  }
+}
