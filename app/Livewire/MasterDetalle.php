@@ -8,8 +8,8 @@ use App\Models\MasterGrupo;
 use App\Models\MasterJugadorGrupo;
 use App\Models\MasterPartido;
 use App\Models\Ranking;
+use App\Models\Jugador;
 use App\Models\Torneo;
-use App\Models\Inscripcion;
 use Livewire\Component;
 
 class MasterDetalle extends Component
@@ -491,19 +491,15 @@ class MasterDetalle extends Component
             );
         }
 
-        $jugadoresDisponibles = Inscripcion::with('jugador')
-            ->where('torneo_id', $this->torneo->id)
-            ->where('categoria_id', $this->master->categoria_id)
+        $jugadoresDisponibles = Jugador::where('apellido', '!=', 'Bye')
             ->when($this->buscarJugador, fn($q) =>
-                $q->whereHas('jugador', fn($q2) =>
+                $q->where(fn($q2) =>
                     $q2->where('apellido', 'like', '%' . $this->buscarJugador . '%')
                        ->orWhere('nombre', 'like', '%' . $this->buscarJugador . '%')
                 )
             )
-            ->get()
-            ->map(fn($i) => $i->jugador)
-            ->sortBy('apellido')
-            ->values();
+            ->orderBy('apellido')->orderBy('nombre')
+            ->get();
 
         $partidoActivo = $this->partidoId
             ? MasterPartido::with(['jugador1', 'jugador2'])->find($this->partidoId)
