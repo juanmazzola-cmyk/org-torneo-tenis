@@ -33,6 +33,11 @@ class MasterDetalle extends Component
     public bool   $modalResultadoFinal = false;
     public ?int   $finalId             = null;
 
+    // Sets individuales (compartidos por ambos modales)
+    public string $s1j1 = '', $s1j2 = '';
+    public string $s2j1 = '', $s2j2 = '';
+    public string $s3j1 = '', $s3j2 = '';
+
     // Confirmación quitar jugador
     public bool $confirmQuitarJugador = false;
     public ?int $quitarGrupoId        = null;
@@ -125,16 +130,19 @@ class MasterDetalle extends Component
         $this->partidoId      = $partidoId;
         $this->resultado      = $partido->resultado ?? '';
         $this->ganadorId      = (string) ($partido->ganador_id ?? '');
+        $this->parsearSets($this->resultado);
         $this->modalResultado = true;
     }
 
     public function guardarResultado(): void
     {
+        $this->resultado = $this->buildResultado();
+
         $this->validate([
             'resultado' => 'required|string|max:50',
             'ganadorId' => 'required|exists:jugadores,id',
         ], [
-            'resultado.required' => 'Ingresá el resultado.',
+            'resultado.required' => 'Ingresá al menos el Set 1.',
             'ganadorId.required' => 'Seleccioná el ganador.',
         ]);
 
@@ -239,16 +247,19 @@ class MasterDetalle extends Component
         $this->finalId             = $finalId;
         $this->resultado           = $final->resultado ?? '';
         $this->ganadorId           = (string) ($final->ganador_id ?? '');
+        $this->parsearSets($this->resultado);
         $this->modalResultadoFinal = true;
     }
 
     public function guardarResultadoFinal(): void
     {
+        $this->resultado = $this->buildResultado();
+
         $this->validate([
             'resultado' => 'required|string|max:50',
             'ganadorId' => 'required|exists:jugadores,id',
         ], [
-            'resultado.required' => 'Ingresá el resultado.',
+            'resultado.required' => 'Ingresá al menos el Set 1.',
             'ganadorId.required' => 'Seleccioná el ganador.',
         ]);
 
@@ -401,6 +412,7 @@ class MasterDetalle extends Component
         $this->partidoId      = null;
         $this->resultado      = '';
         $this->ganadorId      = '';
+        $this->resetSets();
     }
 
     private function resetResultadoFinal(): void
@@ -409,6 +421,41 @@ class MasterDetalle extends Component
         $this->finalId             = null;
         $this->resultado           = '';
         $this->ganadorId           = '';
+        $this->resetSets();
+    }
+
+    // ── Helpers sets ──────────────────────────────────────────────────
+
+    private function parsearSets(string $resultado): void
+    {
+        $this->resetSets();
+        if (!$resultado) return;
+
+        foreach (explode(' ', trim($resultado)) as $i => $set) {
+            if (!preg_match('/^(\d+)-(\d+)$/', $set, $m)) continue;
+            match($i) {
+                0 => [$this->s1j1, $this->s1j2] = [$m[1], $m[2]],
+                1 => [$this->s2j1, $this->s2j2] = [$m[1], $m[2]],
+                2 => [$this->s3j1, $this->s3j2] = [$m[1], $m[2]],
+                default => null,
+            };
+        }
+    }
+
+    private function buildResultado(): string
+    {
+        $sets = [];
+        if ($this->s1j1 !== '' && $this->s1j2 !== '') $sets[] = "{$this->s1j1}-{$this->s1j2}";
+        if ($this->s2j1 !== '' && $this->s2j2 !== '') $sets[] = "{$this->s2j1}-{$this->s2j2}";
+        if ($this->s3j1 !== '' && $this->s3j2 !== '') $sets[] = "{$this->s3j1}-{$this->s3j2}";
+        return implode(' ', $sets);
+    }
+
+    private function resetSets(): void
+    {
+        $this->s1j1 = $this->s1j2 = '';
+        $this->s2j1 = $this->s2j2 = '';
+        $this->s3j1 = $this->s3j2 = '';
     }
 
     public function cerrarModales(): void

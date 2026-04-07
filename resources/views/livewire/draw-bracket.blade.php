@@ -319,10 +319,11 @@
                         @error('ganadorId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Resultado (opcional)</label>
-                        <input type="text" wire:model="resultado"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                               placeholder="Ej: 6-4 6-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Resultado (opcional)</label>
+                        @include('partials.set-inputs', [
+                            'j1nombre' => $partido?->jugador1?->apellido ?? 'J1',
+                            'j2nombre' => $partido?->jugador2?->apellido ?? 'J2',
+                        ])
                     </div>
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" wire:click="cancelarResultado"

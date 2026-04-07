@@ -20,6 +20,11 @@ class DrawBracket extends Component
     public string $ganadorId = '';
     public string $resultado = '';
 
+    // Sets individuales
+    public string $s1j1 = '', $s1j2 = '';
+    public string $s2j1 = '', $s2j2 = '';
+    public string $s3j1 = '', $s3j2 = '';
+
     // Asignar jugador a posición de primera ronda
     public ?int $asignandoPartidoId  = null;
     public string $asignandoPosicion = '';   // '1' o '2'
@@ -37,10 +42,13 @@ class DrawBracket extends Component
         $this->partidoId = $partidoId;
         $this->ganadorId = (string) ($partido->ganador_id ?? '');
         $this->resultado = $partido->resultado ?? '';
+        $this->parsearSets($this->resultado);
     }
 
     public function guardarResultado(): void
     {
+        $this->resultado = $this->buildResultado();
+
         $this->validate([
             'ganadorId' => 'required|exists:jugadores,id',
             'resultado' => 'nullable|max:100',
@@ -209,7 +217,8 @@ class DrawBracket extends Component
 
     public function cancelarResultado(): void
     {
-        $this->reset(['partidoId', 'ganadorId', 'resultado']);
+        $this->reset(['partidoId', 'ganadorId', 'resultado',
+            's1j1', 's1j2', 's2j1', 's2j2', 's3j1', 's3j2']);
     }
 
     public function anularResultado(int $partidoId): void
@@ -355,6 +364,36 @@ class DrawBracket extends Component
     public function cancelarAsignacion(): void
     {
         $this->reset(['asignandoPartidoId', 'asignandoPosicion', 'jugadorAsignarId']);
+    }
+
+    // ── Helpers sets ──────────────────────────────────────────────────
+
+    private function parsearSets(string $resultado): void
+    {
+        $this->s1j1 = $this->s1j2 = '';
+        $this->s2j1 = $this->s2j2 = '';
+        $this->s3j1 = $this->s3j2 = '';
+
+        if (!$resultado) return;
+
+        foreach (explode(' ', trim($resultado)) as $i => $set) {
+            if (!preg_match('/^(\d+)-(\d+)$/', $set, $m)) continue;
+            match($i) {
+                0 => [$this->s1j1, $this->s1j2] = [$m[1], $m[2]],
+                1 => [$this->s2j1, $this->s2j2] = [$m[1], $m[2]],
+                2 => [$this->s3j1, $this->s3j2] = [$m[1], $m[2]],
+                default => null,
+            };
+        }
+    }
+
+    private function buildResultado(): string
+    {
+        $sets = [];
+        if ($this->s1j1 !== '' && $this->s1j2 !== '') $sets[] = "{$this->s1j1}-{$this->s1j2}";
+        if ($this->s2j1 !== '' && $this->s2j2 !== '') $sets[] = "{$this->s2j1}-{$this->s2j2}";
+        if ($this->s3j1 !== '' && $this->s3j2 !== '') $sets[] = "{$this->s3j1}-{$this->s3j2}";
+        return implode(' ', $sets);
     }
 
     public function render()
