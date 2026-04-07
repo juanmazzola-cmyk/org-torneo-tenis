@@ -163,6 +163,7 @@ class MasterDetalle extends Component
             $partido->grupo->actualizarCruces();
         }
 
+        $this->recalcularRankingMaster();
         $this->resetResultado();
         session()->flash('ok', 'Resultado guardado.');
     }
@@ -179,6 +180,7 @@ class MasterDetalle extends Component
         $this->limpiarFaseFinal();
 
         $partido->update(['resultado' => null, 'ganador_id' => null]);
+        $this->recalcularRankingMaster();
         session()->flash('ok', 'Resultado anulado.');
     }
 
@@ -284,7 +286,7 @@ class MasterDetalle extends Component
 
         // Si era la final, guardar ranking
         if ($final->tipo === 'final') {
-            $this->guardarRanking();
+            $this->recalcularRankingMaster();
             $this->master->update(['estado' => 'finalizado']);
         }
 
@@ -303,15 +305,12 @@ class MasterDetalle extends Component
                 ->update(['jugador1_id' => null, 'jugador2_id' => null, 'resultado' => null, 'ganador_id' => null]);
         }
 
-        // Si se anula la final, limpiar rankings y volver a en_curso
         if ($final->tipo === 'final') {
-            Ranking::where('torneo_id', $this->master->torneo_id)
-                ->where('categoria_id', $this->master->categoria_id)
-                ->delete();
             $this->master->update(['estado' => 'en_curso']);
         }
 
         $final->update(['resultado' => null, 'ganador_id' => null]);
+        $this->recalcularRankingMaster();
         session()->flash('ok', 'Resultado anulado.');
     }
 
@@ -332,35 +331,37 @@ class MasterDetalle extends Component
             ]);
     }
 
-    private function guardarRanking(): void
+    private function recalcularRankingMaster(): void
     {
-        $semi1 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_1')->first();
-        $semi2 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_2')->first();
-        $final = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'final')->first();
-
-        if (!$semi1 || !$semi2 || !$final?->ganador_id) return;
-
-        // Borrar rankings anteriores de este master
         Ranking::where('torneo_id', $this->master->torneo_id)
             ->where('categoria_id', $this->master->categoria_id)
             ->delete();
 
-        $puntos = [
-            $final->ganador_id              => 100, // Campeón
-            $final->perdedor_id()           => 80,  // Finalista
-            $semi1->perdedor_id()           => 60,  // Semifinalista
-            $semi2->perdedor_id()           => 60,  // Semifinalista
-        ];
+        $puntos = [];
 
-        // No clasificados (3° y 4° de cada zona)
-        $grupos = $this->master->grupos()->get();
-        $clasificados = array_filter(array_keys($puntos));
+        $semi1 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_1')->first();
+        $semi2 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_2')->first();
+        $final = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'final')->first();
 
-        foreach ($grupos as $grupo) {
-            $pos = $grupo->calcularPosiciones();
-            foreach ($pos as $i => $s) {
+        // Jugadores en fase final (para no darles 40 pts de zona)
+        $enFaseFinal = array_filter(array_unique([
+            $semi1?->jugador1_id, $semi1?->jugador2_id,
+            $semi2?->jugador1_id, $semi2?->jugador2_id,
+        ]));
+
+        if ($final?->ganador_id) {
+            $puntos[$final->ganador_id]  = 100;
+            $puntos[$final->perdedor_id()] = 80;
+        }
+        if ($semi1?->ganador_id) $puntos[$semi1->perdedor_id()] = 60;
+        if ($semi2?->ganador_id) $puntos[$semi2->perdedor_id()] = 60;
+
+        // No clasificados (3° y 4° de zonas completas)
+        foreach ($this->master->grupos()->get() as $grupo) {
+            if (!$grupo->estaCompleto()) continue;
+            foreach ($grupo->calcularPosiciones() as $s) {
                 $jId = $s['jugador']->id;
-                if (!in_array($jId, $clasificados)) {
+                if (!in_array($jId, $enFaseFinal) && !isset($puntos[$jId])) {
                     $puntos[$jId] = 40;
                 }
             }
@@ -375,11 +376,11 @@ class MasterDetalle extends Component
                     'categoria_id' => $this->master->categoria_id,
                 ],
                 [
-                    'ronda_eliminado' => match($pts) {
-                        100 => 0,
-                        80  => 1,
-                        60  => 2,
-                        default => 3,
+                    'ronda_eliminado' => match(true) {
+                        $pts >= 100 => 0,
+                        $pts >= 80  => 1,
+                        $pts >= 60  => 2,
+                        default     => 3,
                     },
                     'puntos' => $pts,
                 ]
