@@ -190,45 +190,141 @@
         @endforeach
     </div>
 
-    <!-- ══ Modal Asignar Jugador ══════════════════════════════════════════ -->
-    @if($modalAsignar)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Asignar jugador — Posición {{ $asignarPosicion }}</h3>
-
-            <div class="mb-3">
-                <input type="text" wire:model.live.debounce.200ms="buscarJugador"
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                       placeholder="Buscar jugador...">
+    <!-- ══ Fase Final ═══════════════════════════════════════════════════ -->
+    <div class="mt-6">
+        <div class="bg-white rounded-xl shadow p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    🏆 Fase Final
+                    @if($master->estado === 'finalizado')
+                        <span class="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Finalizado</span>
+                    @endif
+                </h2>
+                @if($ambasZonasCompletas && $faseFinal->isEmpty())
+                    <button wire:click="generarFaseFinal"
+                            class="bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition text-sm font-medium">
+                        Generar Fase Final
+                    </button>
+                @elseif(!$ambasZonasCompletas && $faseFinal->isEmpty())
+                    <span class="text-sm text-gray-400 italic">Completá todas las zonas primero</span>
+                @endif
             </div>
 
-            <div class="border border-gray-200 rounded-lg overflow-y-auto max-h-56 divide-y divide-gray-100 mb-4">
+            @if($faseFinal->isEmpty())
+                <p class="text-gray-400 text-sm text-center py-4">
+                    Una vez que ambas zonas estén completas, generá la fase final.
+                </p>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @foreach($faseFinal as $match)
+                    <div class="border rounded-xl p-4 {{ $match->tipo === 'final' ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200' }}">
+                        <div class="text-xs font-bold uppercase tracking-wide mb-3
+                                    {{ $match->tipo === 'final' ? 'text-yellow-600' : 'text-gray-500' }}">
+                            {{ $match->label() }}
+                        </div>
+
+                        @if($match->jugador1_id && $match->jugador2_id)
+                            <div class="space-y-2 mb-3">
+                                <div class="flex items-center gap-2">
+                                    @if($match->ganador_id === $match->jugador1_id)
+                                        <span class="text-yellow-500 text-xs">🥇</span>
+                                    @else
+                                        <span class="w-4"></span>
+                                    @endif
+                                    <span class="text-sm {{ $match->ganador_id === $match->jugador1_id ? 'font-bold text-gray-900' : 'text-gray-600' }}">
+                                        {{ $match->jugador1->apellido }}, {{ $match->jugador1->nombre }}
+                                    </span>
+                                </div>
+                                <div class="text-xs text-gray-400 text-center">vs</div>
+                                <div class="flex items-center gap-2">
+                                    @if($match->ganador_id === $match->jugador2_id)
+                                        <span class="text-yellow-500 text-xs">🥇</span>
+                                    @else
+                                        <span class="w-4"></span>
+                                    @endif
+                                    <span class="text-sm {{ $match->ganador_id === $match->jugador2_id ? 'font-bold text-gray-900' : 'text-gray-600' }}">
+                                        {{ $match->jugador2->apellido }}, {{ $match->jugador2->nombre }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if($match->resultado)
+                                <div class="text-center text-xs font-mono text-gray-500 mb-3">{{ $match->resultado }}</div>
+                            @endif
+
+                            <div class="flex gap-2 justify-center">
+                                <button wire:click="abrirResultadoFinal({{ $match->id }})"
+                                        class="text-xs px-3 py-1.5 rounded-lg font-medium transition
+                                            {{ $match->ganador_id ? 'text-blue-600 border border-blue-200 hover:bg-blue-50' : 'bg-green-600 text-white hover:bg-green-700' }}">
+                                    {{ $match->ganador_id ? 'Editar' : 'Resultado' }}
+                                </button>
+                                @if($match->ganador_id)
+                                <button wire:click="anularResultadoFinal({{ $match->id }})"
+                                        wire:confirm="¿Anular este resultado?"
+                                        class="text-xs text-red-500 hover:text-red-700 px-2 py-1.5 rounded hover:bg-red-50 transition">✕</button>
+                                @endif
+                            </div>
+                        @else
+                            <div class="text-center text-gray-400 text-sm py-2 italic">
+                                Se define al terminar las semifinales
+                            </div>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+
+                @if($master->estado === 'finalizado')
+                <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 text-center">
+                    Puntos otorgados: Campeón 100 · Finalista 80 · Semifinalistas 60 · No clasificados 40
+                </div>
+                @endif
+            @endif
+        </div>
+    </div>
+
+    <!-- ══ Modal Asignar Jugador ══════════════════════════════════════════ -->
+    @if($modalAsignar)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
+        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 flex flex-col"
+             style="max-height: 90vh;">
+            <h3 class="text-lg font-bold text-gray-800 mb-1 shrink-0">Asignar jugador</h3>
+            <p class="text-sm text-gray-500 mb-3 shrink-0">Posición {{ $asignarPosicion }} — hacé clic para asignar</p>
+
+            <div class="mb-3 shrink-0">
+                <input type="text" wire:model.live.debounce.200ms="buscarJugador"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Buscar jugador..."
+                       autocomplete="off">
+            </div>
+
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-100 overflow-y-auto flex-1">
                 @forelse($jugadoresDisponibles as $j)
                 @php $yaAsignado = $jugadoresAsignados->contains($j->id); @endphp
-                <label class="flex items-center gap-3 px-3 py-2
-                              {{ $yaAsignado ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:bg-green-50' }}">
-                    <input type="radio"
-                           wire:model="asignarJugadorId"
-                           value="{{ $j->id }}"
-                           {{ $yaAsignado ? 'disabled' : '' }}
-                           class="w-4 h-4 text-green-600">
-                    <span class="text-sm text-gray-800">
-                        <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
-                        @if($yaAsignado)<span class="text-xs text-gray-400 ml-1">(ya asignado)</span>@endif
-                    </span>
-                </label>
+                @if($yaAsignado)
+                    <div class="flex items-center gap-3 px-3 py-2.5 opacity-40 bg-gray-50 cursor-not-allowed">
+                        <span class="text-sm text-gray-700">
+                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="text-xs text-gray-400 ml-1">(ya asignado)</span>
+                        </span>
+                    </div>
+                @else
+                    <button wire:click="asignarJugador({{ $j->id }})"
+                            class="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-green-50 active:bg-green-100 transition cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+                        <span class="text-sm text-gray-800">
+                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                        </span>
+                    </button>
+                @endif
                 @empty
-                <div class="px-3 py-4 text-center text-gray-400 text-sm">No hay jugadores inscriptos en esta categoría</div>
+                    <div class="px-3 py-4 text-center text-gray-400 text-sm">No hay jugadores inscriptos en esta categoría</div>
                 @endforelse
             </div>
 
-            @error('asignarJugadorId') <p class="text-red-500 text-xs mb-3">{{ $message }}</p> @enderror
-
-            <div class="flex gap-3 justify-end">
+            <div class="flex justify-end mt-4 shrink-0">
                 <button wire:click="cerrarModales"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
-                <button wire:click="guardarAsignacion"
-                        class="px-4 py-2 rounded-lg bg-green-700 text-white hover:bg-green-800 text-sm font-medium">Asignar</button>
             </div>
         </div>
     </div>
@@ -236,7 +332,8 @@
 
     <!-- ══ Modal Resultado ════════════════════════════════════════════════ -->
     @if($modalResultado && $partidoActivo)
-    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
         <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
             <h3 class="text-lg font-bold text-gray-800 mb-1">Cargar Resultado</h3>
             <p class="text-sm text-gray-500 mb-4">
@@ -271,6 +368,48 @@
                 <button wire:click="cerrarModales"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
                 <button wire:click="guardarResultado"
+                        class="px-4 py-2 rounded-lg bg-green-700 text-white hover:bg-green-800 text-sm font-medium">Guardar</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- ══ Modal Resultado Fase Final ═══════════════════════════════════ -->
+    @if($modalResultadoFinal && $finalActiva)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
+        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">{{ $finalActiva->label() }}</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                {{ $finalActiva->jugador1->apellido }} vs {{ $finalActiva->jugador2->apellido }}
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Resultado *</label>
+                    <input type="text" wire:model="resultado"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                           placeholder="Ej: 6-4 6-3 o 6-4 3-6 7-5">
+                    @error('resultado') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ganador *</label>
+                    <select wire:model="ganadorId"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="">Seleccionar...</option>
+                        <option value="{{ $finalActiva->jugador1_id }}">
+                            {{ $finalActiva->jugador1->apellido }}, {{ $finalActiva->jugador1->nombre }}
+                        </option>
+                        <option value="{{ $finalActiva->jugador2_id }}">
+                            {{ $finalActiva->jugador2->apellido }}, {{ $finalActiva->jugador2->nombre }}
+                        </option>
+                    </select>
+                    @error('ganadorId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+            </div>
+            <div class="flex gap-3 justify-end mt-5">
+                <button wire:click="cerrarModales"
+                        class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
+                <button wire:click="guardarResultadoFinal"
                         class="px-4 py-2 rounded-lg bg-green-700 text-white hover:bg-green-800 text-sm font-medium">Guardar</button>
             </div>
         </div>

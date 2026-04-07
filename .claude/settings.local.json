@@ -23,7 +23,10 @@
       "Bash(/c/xampp/php/php.exe /c/xampp/php/composer show livewire/livewire 2>&1 | head -5)",
       "Bash(npm run:*)",
       "Bash(/c/xampp/php/php.exe -r \"\nrequire 'vendor/autoload.php';\n\\\\$models = ['Categoria','Jugador','Torneo','Inscripcion','Draw','Partido','Ranking','Config'];\nforeach\\(\\\\$models as \\\\$m\\) {\n    \\\\$class = 'App\\\\\\\\\\\\\\\\Models\\\\\\\\\\\\\\\\' . \\\\$m;\n    \\\\$obj = new \\\\$class\\(\\);\n    echo \\\\$m . ' => ' . \\\\$obj->getTable\\(\\) . PHP_EOL;\n}\n\" 2>&1)",
-      "Bash(ls C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png 2>/dev/null || dir \"C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png\" 2>/dev/null)"
+      "Bash(ls C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png 2>/dev/null || dir \"C:\\\\xampp\\\\htdocs\\\\org-torneo-tenis\\\\*.png\" 2>/dev/null)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

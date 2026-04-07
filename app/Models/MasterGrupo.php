@@ -106,6 +106,14 @@ class MasterGrupo extends Model
         ]);
     }
 
+    /** Verifica si todos los partidos del grupo tienen resultado */
+    public function estaCompleto(): bool
+    {
+        $total = $this->partidos()->count();
+        if ($total < 6) return false;
+        return $this->partidos()->whereNull('ganador_id')->count() === 0;
+    }
+
     /** Calcula tabla de posiciones */
     public function calcularPosiciones(): array
     {

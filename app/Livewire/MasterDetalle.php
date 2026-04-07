@@ -3,9 +3,11 @@
 namespace App\Livewire;
 
 use App\Models\Master;
+use App\Models\MasterFinal;
 use App\Models\MasterGrupo;
 use App\Models\MasterJugadorGrupo;
 use App\Models\MasterPartido;
+use App\Models\Ranking;
 use App\Models\Torneo;
 use App\Models\Inscripcion;
 use Livewire\Component;
@@ -19,71 +21,60 @@ class MasterDetalle extends Component
     public bool   $modalAsignar    = false;
     public ?int   $asignarGrupoId  = null;
     public ?int   $asignarPosicion = null;
-    public string $asignarJugadorId = '';
-    public string $buscarJugador    = '';
+    public string $buscarJugador   = '';
 
-    // Modal resultado
-    public bool   $modalResultado  = false;
-    public ?int   $partidoId       = null;
-    public string $resultado       = '';
-    public string $ganadorId       = '';
+    // Modal resultado zona
+    public bool   $modalResultado = false;
+    public ?int   $partidoId      = null;
+    public string $resultado      = '';
+    public string $ganadorId      = '';
+
+    // Modal resultado fase final
+    public bool   $modalResultadoFinal = false;
+    public ?int   $finalId             = null;
 
     // Confirmación quitar jugador
-    public bool  $confirmQuitarJugador = false;
-    public ?int  $quitarGrupoId        = null;
-    public ?int  $quitarJugadorId      = null;
+    public bool $confirmQuitarJugador = false;
+    public ?int $quitarGrupoId        = null;
+    public ?int $quitarJugadorId      = null;
 
     public function mount(Torneo $torneo, Master $master): void
     {
-        $this->torneo  = $torneo;
-        $this->master  = $master;
+        $this->torneo = $torneo;
+        $this->master = $master;
     }
 
     // ── Asignar jugador ────────────────────────────────────────────────
 
     public function abrirAsignar(int $grupoId, int $posicion): void
     {
-        $this->asignarGrupoId   = $grupoId;
-        $this->asignarPosicion  = $posicion;
-        $this->asignarJugadorId = '';
-        $this->buscarJugador    = '';
-        $this->modalAsignar     = true;
+        $this->asignarGrupoId  = $grupoId;
+        $this->asignarPosicion = $posicion;
+        $this->buscarJugador   = '';
+        $this->modalAsignar    = true;
     }
 
-    public function guardarAsignacion(): void
+    public function asignarJugador(int $jugadorId): void
     {
-        $this->validate([
-            'asignarJugadorId' => 'required|exists:jugadores,id',
-        ], ['asignarJugadorId.required' => 'Seleccioná un jugador.']);
-
         $grupo = MasterGrupo::findOrFail($this->asignarGrupoId);
 
-        // Verificar que no esté ya en este grupo
-        if ($grupo->jugadoresGrupo()->where('jugador_id', $this->asignarJugadorId)->exists()) {
-            $this->addError('asignarJugadorId', 'El jugador ya está en esta zona.');
+        $otroGrupo = $this->master->grupos()->where('id', '!=', $this->asignarGrupoId)->first();
+        if ($otroGrupo?->jugadoresGrupo()->where('jugador_id', $jugadorId)->exists()) {
+            session()->flash('error', 'El jugador ya está en la otra zona.');
+            $this->resetAsignar();
             return;
         }
 
-        // Verificar que no esté en el otro grupo del mismo master
-        $otroGrupo = $this->master->grupos()
-            ->where('id', '!=', $this->asignarGrupoId)
-            ->first();
-        if ($otroGrupo?->jugadoresGrupo()->where('jugador_id', $this->asignarJugadorId)->exists()) {
-            $this->addError('asignarJugadorId', 'El jugador ya está en la otra zona.');
-            return;
-        }
-
-        // Eliminar si ya había alguien en esa posición
         $grupo->jugadoresGrupo()->where('posicion', $this->asignarPosicion)->delete();
+        $grupo->jugadoresGrupo()->where('jugador_id', $jugadorId)->delete();
 
         MasterJugadorGrupo::create([
             'grupo_id'   => $this->asignarGrupoId,
-            'jugador_id' => $this->asignarJugadorId,
+            'jugador_id' => $jugadorId,
             'posicion'   => $this->asignarPosicion,
         ]);
 
-        // Si el grupo ya tiene 4 jugadores, regenerar partidos
-        if ($grupo->jugadoresGrupo()->count() === 4) {
+        if ($grupo->fresh()->jugadoresGrupo()->count() === 4) {
             $grupo->generarPartidos();
         }
 
@@ -93,45 +84,47 @@ class MasterDetalle extends Component
 
     public function generarPartidos(int $grupoId): void
     {
-        $grupo = MasterGrupo::findOrFail($grupoId);
-        $grupo->generarPartidos();
-        session()->flash('ok', 'Partidos generados correctamente.');
+        MasterGrupo::findOrFail($grupoId)->generarPartidos();
+        session()->flash('ok', 'Partidos generados.');
     }
 
     public function confirmarQuitarJugador(int $grupoId, int $jugadorId): void
     {
-        $this->quitarGrupoId    = $grupoId;
-        $this->quitarJugadorId  = $jugadorId;
+        $this->quitarGrupoId        = $grupoId;
+        $this->quitarJugadorId      = $jugadorId;
         $this->confirmQuitarJugador = true;
     }
 
     public function quitarJugador(): void
     {
         $grupo = MasterGrupo::findOrFail($this->quitarGrupoId);
-
-        // Borrar partidos del grupo (se regenerarán cuando se reasignen)
         $grupo->partidos()->delete();
-
-        // Quitar jugador
         $grupo->jugadoresGrupo()->where('jugador_id', $this->quitarJugadorId)->delete();
 
-        $this->reset(['confirmQuitarJugador', 'quitarGrupoId', 'quitarJugadorId']);
-        session()->flash('ok', 'Jugador quitado. Reasigná los 4 jugadores para regenerar los partidos.');
+        // Si hay fase final, limpiarla
+        $this->limpiarFaseFinal();
+
+        $this->confirmQuitarJugador = false;
+        $this->quitarGrupoId        = null;
+        $this->quitarJugadorId      = null;
+        session()->flash('ok', 'Jugador quitado.');
     }
 
     public function cancelarQuitarJugador(): void
     {
-        $this->reset(['confirmQuitarJugador', 'quitarGrupoId', 'quitarJugadorId']);
+        $this->confirmQuitarJugador = false;
+        $this->quitarGrupoId        = null;
+        $this->quitarJugadorId      = null;
     }
 
-    // ── Resultados ─────────────────────────────────────────────────────
+    // ── Resultados zona ────────────────────────────────────────────────
 
     public function abrirResultado(int $partidoId): void
     {
         $partido = MasterPartido::findOrFail($partidoId);
-        $this->partidoId  = $partidoId;
-        $this->resultado  = $partido->resultado ?? '';
-        $this->ganadorId  = (string) ($partido->ganador_id ?? '');
+        $this->partidoId      = $partidoId;
+        $this->resultado      = $partido->resultado ?? '';
+        $this->ganadorId      = (string) ($partido->ganador_id ?? '');
         $this->modalResultado = true;
     }
 
@@ -145,12 +138,12 @@ class MasterDetalle extends Component
             'ganadorId.required' => 'Seleccioná el ganador.',
         ]);
 
-        $partido = MasterPartido::findOrFail($this->partidoId);
-        $esJornada1 = $partido->jornada === 1;
+        $partido     = MasterPartido::findOrFail($this->partidoId);
+        $esJornada1  = $partido->jornada === 1;
 
-        // Si se cambió un resultado de jornada 1, limpiar cruces primero
         if ($esJornada1 && $partido->ganador_id) {
             $partido->grupo->limpiarCruces();
+            $this->limpiarFaseFinal();
         }
 
         $partido->update([
@@ -158,7 +151,6 @@ class MasterDetalle extends Component
             'ganador_id' => $this->ganadorId,
         ]);
 
-        // Si era jornada 1, actualizar jornadas 2 y 3
         if ($esJornada1) {
             $partido->grupo->actualizarCruces();
         }
@@ -175,30 +167,255 @@ class MasterDetalle extends Component
             $partido->grupo->limpiarCruces();
         }
 
-        $partido->update([
-            'resultado'  => null,
-            'ganador_id' => null,
+        // Si se anula cualquier resultado de zona, limpiar fase final
+        $this->limpiarFaseFinal();
+
+        $partido->update(['resultado' => null, 'ganador_id' => null]);
+        session()->flash('ok', 'Resultado anulado.');
+    }
+
+    // ── Fase Final ─────────────────────────────────────────────────────
+
+    public function generarFaseFinal(): void
+    {
+        $grupos = $this->master->grupos()->get();
+        if ($grupos->count() !== 2) return;
+
+        foreach ($grupos as $g) {
+            if (!$g->estaCompleto()) {
+                session()->flash('error', 'Completá todos los partidos de las zonas primero.');
+                return;
+            }
+        }
+
+        $zona1 = $grupos->firstWhere('numero', 1);
+        $zona2 = $grupos->firstWhere('numero', 2);
+
+        $pos1 = $zona1->calcularPosiciones();
+        $pos2 = $zona2->calcularPosiciones();
+
+        $p1z1 = $pos1[0]['jugador']->id ?? null; // 1° Zona 1
+        $p2z1 = $pos1[1]['jugador']->id ?? null; // 2° Zona 1
+        $p1z2 = $pos2[0]['jugador']->id ?? null; // 1° Zona 2
+        $p2z2 = $pos2[1]['jugador']->id ?? null; // 2° Zona 2
+
+        if (!$p1z1 || !$p2z1 || !$p1z2 || !$p2z2) {
+            session()->flash('error', 'No se pudieron determinar los clasificados.');
+            return;
+        }
+
+        // Limpiar fase final anterior
+        $this->limpiarFaseFinal();
+
+        // Semifinal 1: 1° Zona 1 vs 2° Zona 2
+        MasterFinal::create([
+            'master_id'   => $this->master->id,
+            'tipo'        => 'semifinal_1',
+            'jugador1_id' => $p1z1,
+            'jugador2_id' => $p2z2,
         ]);
 
+        // Semifinal 2: 1° Zona 2 vs 2° Zona 1
+        MasterFinal::create([
+            'master_id'   => $this->master->id,
+            'tipo'        => 'semifinal_2',
+            'jugador1_id' => $p1z2,
+            'jugador2_id' => $p2z1,
+        ]);
+
+        // Final (vacía, se llena al terminar semis)
+        MasterFinal::create([
+            'master_id' => $this->master->id,
+            'tipo'      => 'final',
+        ]);
+
+        $this->master->update(['estado' => 'en_curso']);
+        session()->flash('ok', 'Fase final generada. Ingresá los resultados de las semifinales.');
+    }
+
+    public function abrirResultadoFinal(int $finalId): void
+    {
+        $final = MasterFinal::findOrFail($finalId);
+        $this->finalId             = $finalId;
+        $this->resultado           = $final->resultado ?? '';
+        $this->ganadorId           = (string) ($final->ganador_id ?? '');
+        $this->modalResultadoFinal = true;
+    }
+
+    public function guardarResultadoFinal(): void
+    {
+        $this->validate([
+            'resultado' => 'required|string|max:50',
+            'ganadorId' => 'required|exists:jugadores,id',
+        ], [
+            'resultado.required' => 'Ingresá el resultado.',
+            'ganadorId.required' => 'Seleccioná el ganador.',
+        ]);
+
+        $final = MasterFinal::findOrFail($this->finalId);
+
+        // Si se edita una semi y ya había final con resultado, limpiar final
+        if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
+            MasterFinal::where('master_id', $this->master->id)
+                ->where('tipo', 'final')
+                ->update(['jugador1_id' => null, 'jugador2_id' => null, 'resultado' => null, 'ganador_id' => null]);
+        }
+
+        $final->update([
+            'resultado'  => trim($this->resultado),
+            'ganador_id' => $this->ganadorId,
+        ]);
+
+        // Si era una semi, intentar armar la final
+        if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
+            $this->actualizarFinal();
+        }
+
+        // Si era la final, guardar ranking
+        if ($final->tipo === 'final') {
+            $this->guardarRanking();
+            $this->master->update(['estado' => 'finalizado']);
+        }
+
+        $this->resetResultadoFinal();
+        session()->flash('ok', 'Resultado guardado.');
+    }
+
+    public function anularResultadoFinal(int $finalId): void
+    {
+        $final = MasterFinal::findOrFail($finalId);
+
+        // Si se anula una semi, limpiar la final también
+        if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
+            MasterFinal::where('master_id', $this->master->id)
+                ->where('tipo', 'final')
+                ->update(['jugador1_id' => null, 'jugador2_id' => null, 'resultado' => null, 'ganador_id' => null]);
+        }
+
+        // Si se anula la final, limpiar rankings y volver a en_curso
+        if ($final->tipo === 'final') {
+            Ranking::where('torneo_id', $this->master->torneo_id)
+                ->where('categoria_id', $this->master->categoria_id)
+                ->delete();
+            $this->master->update(['estado' => 'en_curso']);
+        }
+
+        $final->update(['resultado' => null, 'ganador_id' => null]);
         session()->flash('ok', 'Resultado anulado.');
+    }
+
+    private function actualizarFinal(): void
+    {
+        $semi1 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_1')->first();
+        $semi2 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_2')->first();
+
+        if (!$semi1?->ganador_id || !$semi2?->ganador_id) return;
+
+        MasterFinal::where('master_id', $this->master->id)
+            ->where('tipo', 'final')
+            ->update([
+                'jugador1_id' => $semi1->ganador_id,
+                'jugador2_id' => $semi2->ganador_id,
+                'resultado'   => null,
+                'ganador_id'  => null,
+            ]);
+    }
+
+    private function guardarRanking(): void
+    {
+        $semi1 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_1')->first();
+        $semi2 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_2')->first();
+        $final = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'final')->first();
+
+        if (!$semi1 || !$semi2 || !$final?->ganador_id) return;
+
+        // Borrar rankings anteriores de este master
+        Ranking::where('torneo_id', $this->master->torneo_id)
+            ->where('categoria_id', $this->master->categoria_id)
+            ->delete();
+
+        $puntos = [
+            $final->ganador_id              => 100, // Campeón
+            $final->perdedor_id()           => 80,  // Finalista
+            $semi1->perdedor_id()           => 60,  // Semifinalista
+            $semi2->perdedor_id()           => 60,  // Semifinalista
+        ];
+
+        // No clasificados (3° y 4° de cada zona)
+        $grupos = $this->master->grupos()->get();
+        $clasificados = array_filter(array_keys($puntos));
+
+        foreach ($grupos as $grupo) {
+            $pos = $grupo->calcularPosiciones();
+            foreach ($pos as $i => $s) {
+                $jId = $s['jugador']->id;
+                if (!in_array($jId, $clasificados)) {
+                    $puntos[$jId] = 40;
+                }
+            }
+        }
+
+        foreach ($puntos as $jugadorId => $pts) {
+            if (!$jugadorId) continue;
+            Ranking::updateOrCreate(
+                [
+                    'torneo_id'    => $this->master->torneo_id,
+                    'jugador_id'   => $jugadorId,
+                    'categoria_id' => $this->master->categoria_id,
+                ],
+                [
+                    'ronda_eliminado' => match($pts) {
+                        100 => 0,
+                        80  => 1,
+                        60  => 2,
+                        default => 3,
+                    },
+                    'puntos' => $pts,
+                ]
+            );
+        }
+    }
+
+    private function limpiarFaseFinal(): void
+    {
+        MasterFinal::where('master_id', $this->master->id)->delete();
+        Ranking::where('torneo_id', $this->master->torneo_id)
+            ->where('categoria_id', $this->master->categoria_id)
+            ->delete();
+        $this->master->update(['estado' => 'pendiente']);
     }
 
     // ── Reset helpers ──────────────────────────────────────────────────
 
     private function resetAsignar(): void
     {
-        $this->reset(['modalAsignar', 'asignarGrupoId', 'asignarPosicion', 'asignarJugadorId', 'buscarJugador']);
+        $this->modalAsignar    = false;
+        $this->asignarGrupoId  = null;
+        $this->asignarPosicion = null;
+        $this->buscarJugador   = '';
     }
 
     private function resetResultado(): void
     {
-        $this->reset(['modalResultado', 'partidoId', 'resultado', 'ganadorId']);
+        $this->modalResultado = false;
+        $this->partidoId      = null;
+        $this->resultado      = '';
+        $this->ganadorId      = '';
+    }
+
+    private function resetResultadoFinal(): void
+    {
+        $this->modalResultadoFinal = false;
+        $this->finalId             = null;
+        $this->resultado           = '';
+        $this->ganadorId           = '';
     }
 
     public function cerrarModales(): void
     {
         $this->resetAsignar();
         $this->resetResultado();
+        $this->resetResultadoFinal();
     }
 
     // ── Render ─────────────────────────────────────────────────────────
@@ -214,13 +431,11 @@ class MasterDetalle extends Component
             ])
             ->get();
 
-        // Tabla de posiciones por grupo
         $posiciones = [];
         foreach ($grupos as $grupo) {
             $posiciones[$grupo->id] = $grupo->calcularPosiciones();
         }
 
-        // Jugadores inscriptos en este torneo/categoria disponibles para asignar
         $jugadoresAsignados = collect();
         foreach ($grupos as $grupo) {
             $jugadoresAsignados = $jugadoresAsignados->merge(
@@ -242,11 +457,27 @@ class MasterDetalle extends Component
             ->sortBy('apellido')
             ->values();
 
-        // Partido activo para el modal de resultado
-        $partidoActivo = $this->partidoId ? MasterPartido::with(['jugador1', 'jugador2'])->find($this->partidoId) : null;
+        $partidoActivo = $this->partidoId
+            ? MasterPartido::with(['jugador1', 'jugador2'])->find($this->partidoId)
+            : null;
+
+        $finalActiva = $this->finalId
+            ? MasterFinal::with(['jugador1', 'jugador2'])->find($this->finalId)
+            : null;
+
+        $faseFinal = MasterFinal::with(['jugador1', 'jugador2', 'ganador'])
+            ->where('master_id', $this->master->id)
+            ->orderByRaw("FIELD(tipo, 'semifinal_1', 'semifinal_2', 'final')")
+            ->get();
+
+        $ambasZonasCompletas = $grupos->count() === 2
+            && $grupos->every(fn($g) => $g->estaCompleto());
 
         return view('livewire.master-detalle', compact(
-            'grupos', 'posiciones', 'jugadoresDisponibles', 'jugadoresAsignados', 'partidoActivo'
+            'grupos', 'posiciones',
+            'jugadoresDisponibles', 'jugadoresAsignados',
+            'partidoActivo', 'faseFinal', 'finalActiva',
+            'ambasZonasCompletas'
         ))->layout('layouts.app');
     }
 }
