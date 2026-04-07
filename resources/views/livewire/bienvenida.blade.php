@@ -71,7 +71,11 @@
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">Torneo en curso</span>
                                 @endif
                             </div>
-                            @if($torneo->draws->isEmpty())
+                            @if(($torneo->tipo ?? 'normal') === 'master')
+                                <div class="px-3 py-2">
+                                    <span class="text-yellow-300 text-xs font-semibold">⭐ Torneo Master — Round Robin</span>
+                                </div>
+                            @elseif($torneo->draws->isEmpty())
                                 <div class="px-3 py-2 text-green-300/60 text-xs italic">Draw no disponible aún.</div>
                             @else
                                 <div class="divide-y divide-white/10">

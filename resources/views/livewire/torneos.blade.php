@@ -91,7 +91,12 @@
                             @if($torneo->fecha_fin)
                                 <span>📅 Fin: {{ $torneo->fecha_fin->format('d/m/Y') }}</span>
                             @endif
-                            <span>👤 {{ $torneo->inscripciones_count }} inscriptos</span>
+                            @if(($torneo->tipo ?? 'normal') === 'master')
+                                @php $masterJugadores = $torneo->masters->sum(fn($m) => $m->grupos->sum(fn($g) => $g->jugadoresGrupo->count())) @endphp
+                                <span>👤 {{ $masterJugadores }} inscriptos</span>
+                            @else
+                                <span>👤 {{ $torneo->inscripciones_count }} inscriptos</span>
+                            @endif
                         </div>
                     </div>
                     <div class="flex gap-2 flex-wrap">
