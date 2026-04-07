@@ -6,6 +6,7 @@ use App\Models\Torneo;
 use App\Models\Jugador;
 use App\Models\Categoria;
 use App\Models\Inscripcion;
+use App\Models\Master;
 use App\Exports\InscripcionesExport;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
@@ -13,7 +14,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class TorneoDetalle extends Component
 {
     public Torneo $torneo;
-    public string $tab = 'inscripciones'; // inscripciones | draws
+    public string $tab = 'inscripciones'; // inscripciones | draws | masters
 
     // Formulario inscripción individual
     public string $jugador_id = '';
@@ -35,6 +36,9 @@ class TorneoDetalle extends Component
     // Para el draw
     public string $drawCategoriaId = '';
     public string $drawTamano = '8';
+
+    // Para el master
+    public string $masterCategoriaId = '';
 
     protected function rules(): array
     {
@@ -148,6 +152,23 @@ class TorneoDetalle extends Component
         $this->reset(['drawCategoriaId', 'drawTamano']);
     }
 
+    public function crearMaster(): void
+    {
+        $this->validate([
+            'masterCategoriaId' => 'required|exists:categorias,id',
+        ]);
+
+        $master = Master::updateOrCreate(
+            ['torneo_id' => $this->torneo->id, 'categoria_id' => $this->masterCategoriaId],
+            ['estado' => 'pendiente']
+        );
+
+        $master->crearGrupos();
+
+        session()->flash('ok', 'Master creado. Asigná los jugadores a cada zona.');
+        $this->reset(['masterCategoriaId']);
+    }
+
     public function inscribirMasivo(): void
     {
         $this->validate([
@@ -238,6 +259,7 @@ class TorneoDetalle extends Component
 
         $categorias = Categoria::orderBy('nombre')->get();
         $draws = $this->torneo->draws()->with(['categoria'])->get();
+        $masters = Master::with('categoria')->where('torneo_id', $this->torneo->id)->get();
 
         // IDs de jugadores ya inscriptos en la categoría masiva seleccionada
         $yaInscriptosEnCategoria = $this->categoriaMasiva
@@ -249,7 +271,7 @@ class TorneoDetalle extends Component
 
         return view('livewire.torneo-detalle', compact(
             'inscripciones', 'jugadoresDisponibles', 'jugadoresMasiva',
-            'categorias', 'draws', 'yaInscriptosEnCategoria'
+            'categorias', 'draws', 'masters', 'yaInscriptosEnCategoria'
         ))->layout('layouts.app');
     }
 }

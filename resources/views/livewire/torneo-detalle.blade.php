@@ -33,6 +33,11 @@
                     {{ $tab === 'draws' ? 'bg-white border border-b-white border-gray-200 text-green-700 -mb-px' : 'text-gray-500 hover:text-gray-700' }}">
             🏆 Draws ({{ $draws->count() }})
         </button>
+        <button wire:click="$set('tab', 'masters')"
+                class="px-5 py-2.5 text-sm font-medium rounded-t-lg transition
+                    {{ $tab === 'masters' ? 'bg-white border border-b-white border-gray-200 text-green-700 -mb-px' : 'text-gray-500 hover:text-gray-700' }}">
+            ⭐ Masters ({{ $masters->count() }})
+        </button>
     </div>
 
     {{-- ===================== TAB INSCRIPCIONES ===================== --}}
@@ -317,6 +322,60 @@
             @empty
                 <div class="bg-white rounded-xl shadow p-8 text-center text-gray-400">
                     No hay draws creados. Configurá uno usando el formulario.
+                </div>
+            @endforelse
+        </div>
+    </div>
+    @endif
+
+    {{-- ===================== TAB MASTERS ===================== --}}
+    @if($tab === 'masters')
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- Formulario crear master -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-700">Crear Master</h2>
+            <p class="text-xs text-gray-500 mb-4">8 jugadores · 2 zonas de 4 · Round Robin</p>
+            <form wire:submit="crearMaster" class="space-y-3">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+                    <select wire:model="masterCategoriaId"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">Seleccionar...</option>
+                        @foreach($categorias as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
+                        @endforeach
+                    </select>
+                    @error('masterCategoriaId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                <p class="text-xs text-gray-500">⚠️ Si ya existe un master para esa categoría, se reiniciará.</p>
+                <button type="submit"
+                        class="w-full bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition font-medium text-sm">
+                    Crear Master
+                </button>
+            </form>
+        </div>
+
+        <!-- Listado de masters -->
+        <div class="lg:col-span-3 space-y-4">
+            @forelse($masters as $master)
+                <div class="bg-white rounded-xl shadow p-4 flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-gray-800 text-lg">Categoría {{ $master->categoria->nombre }}</span>
+                        <span class="ml-3 text-sm text-gray-500">Master · 2 zonas de 4</span>
+                        <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium
+                            {{ $master->estado === 'finalizado' ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700' }}">
+                            {{ ucfirst($master->estado) }}
+                        </span>
+                    </div>
+                    <a href="{{ route('torneo.master', [$torneo->id, $master->id]) }}"
+                       class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                        Ver / Cargar Resultados
+                    </a>
+                </div>
+            @empty
+                <div class="bg-white rounded-xl shadow p-8 text-center text-gray-400">
+                    No hay masters creados. Usá el formulario para crear uno.
                 </div>
             @endforelse
         </div>

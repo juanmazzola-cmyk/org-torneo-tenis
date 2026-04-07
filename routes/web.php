@@ -12,10 +12,12 @@ use App\Livewire\ResultadosPublico;
 use App\Livewire\Torneos;
 use App\Livewire\TorneoDetalle;
 use App\Livewire\DrawBracket;
+use App\Livewire\MasterDetalle;
 use App\Livewire\RankingLista;
 use App\Livewire\Configuracion;
 use App\Livewire\MensajeWhatsapp;
 use App\Models\Draw;
+use App\Models\Master;
 use App\Models\Partido;
 use App\Models\Torneo;
 
@@ -43,8 +45,9 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/config',         Configuracion::class)->name('config');
     Route::get('/whatsapp',       MensajeWhatsapp::class)->name('whatsapp');
 
-    Route::get('/torneos/{torneo}',             TorneoDetalle::class)->name('torneo.detalle');
-    Route::get('/torneos/{torneo}/draw/{draw}', DrawBracket::class)->name('torneo.draw');
+    Route::get('/torneos/{torneo}',                 TorneoDetalle::class)->name('torneo.detalle');
+    Route::get('/torneos/{torneo}/draw/{draw}',     DrawBracket::class)->name('torneo.draw');
+    Route::get('/torneos/{torneo}/master/{master}', MasterDetalle::class)->name('torneo.master');
 
     // Vista de impresión (no Livewire)
     Route::get('/torneos/{torneo}/draw/{draw}/imprimir', function (Torneo $torneo, Draw $draw) {
