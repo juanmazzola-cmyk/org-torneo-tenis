@@ -1,0 +1,14 @@
+name: Deploy a Ferozo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deploy en Ferozo
+        run: |
+          curl -s "${{ secrets.FEROZO_WEBHOOK_URL }}"
