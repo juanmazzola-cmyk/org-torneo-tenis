@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Master;
 use App\Models\Torneo;
 use Livewire\Component;
 
@@ -90,6 +91,7 @@ class Torneos extends Component
     {
         return view('livewire.torneos', [
             'torneos' => Torneo::withCount('inscripciones')->orderByDesc('fecha_inicio')->get(),
+            'masters' => Master::with(['torneo', 'categoria'])->orderByDesc('id')->get(),
         ])->layout('layouts.app');
     }
 }

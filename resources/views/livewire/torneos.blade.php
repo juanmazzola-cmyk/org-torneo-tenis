@@ -117,6 +117,43 @@
         </div>
     </div>
 
+    {{-- ══ Sección Masters ══ --}}
+    @if($masters->isNotEmpty())
+    <div class="mt-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            ⭐ Masters
+        </h2>
+        <div class="space-y-3">
+            @foreach($masters as $master)
+            <div class="bg-white rounded-xl shadow p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-1">
+                        <h3 class="text-lg font-bold text-gray-800">{{ $master->torneo->nombre }}</h3>
+                        <span class="text-xs px-2 py-1 rounded-full font-medium bg-yellow-100 text-yellow-700">
+                            ⭐ Master
+                        </span>
+                        <span class="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700">
+                            Cat. {{ $master->categoria->nombre }}
+                        </span>
+                        <span class="text-xs px-2 py-1 rounded-full font-medium
+                            {{ $master->estado === 'finalizado' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-blue-700' }}">
+                            {{ ucfirst($master->estado) }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        📅 {{ $master->torneo->fecha_inicio->format('d/m/Y') }}
+                    </div>
+                </div>
+                <a href="{{ route('torneo.master', [$master->torneo_id, $master->id]) }}"
+                   class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                    Ver / Cargar Resultados
+                </a>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     <!-- Modal Confirmar Eliminar -->
     @if($confirmandoEliminar)
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
