@@ -11,6 +11,7 @@ class Torneos extends Component
     public string $fecha_inicio = '';
     public string $fecha_fin = '';
     public string $estado = 'activo';
+    public string $tipo = 'normal';
 
     public ?int $editandoId = null;
     public bool $confirmandoEliminar = false;
@@ -23,6 +24,7 @@ class Torneos extends Component
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'nullable|date|after_or_equal:fecha_inicio',
             'estado'       => 'required|in:activo,finalizado,cancelado',
+            'tipo'         => 'required|in:normal,master',
         ];
     }
 
@@ -34,6 +36,7 @@ class Torneos extends Component
             'fecha_inicio' => $this->fecha_inicio,
             'fecha_fin'    => $this->fecha_fin ?: null,
             'estado'       => $this->estado,
+            'tipo'         => $this->tipo,
         ];
 
         if ($this->editandoId) {
@@ -54,6 +57,7 @@ class Torneos extends Component
         $this->fecha_inicio = $t->fecha_inicio->format('Y-m-d');
         $this->fecha_fin    = $t->fecha_fin ? $t->fecha_fin->format('Y-m-d') : '';
         $this->estado       = $t->estado;
+        $this->tipo         = $t->tipo ?? 'normal';
     }
 
     public function confirmarEliminar(int $id): void
@@ -79,6 +83,7 @@ class Torneos extends Component
     {
         $this->reset(['editandoId', 'nombre', 'fecha_inicio', 'fecha_fin']);
         $this->estado = 'activo';
+        $this->tipo   = 'normal';
     }
 
     public function render()

@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Torneo extends Model
 {
-    protected $fillable = ['nombre', 'fecha_inicio', 'fecha_fin', 'estado'];
+    protected $fillable = ['nombre', 'fecha_inicio', 'fecha_fin', 'estado', 'tipo'];
+
+    public function esMaster(): bool
+    {
+        return $this->tipo === 'master';
+    }
 
     protected $casts = [
         'fecha_inicio' => 'date',
@@ -26,5 +31,10 @@ class Torneo extends Model
     public function rankings()
     {
         return $this->hasMany(Ranking::class);
+    }
+
+    public function masters()
+    {
+        return $this->hasMany(\App\Models\Master::class);
     }
 }

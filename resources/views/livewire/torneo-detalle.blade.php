@@ -28,16 +28,20 @@
                     {{ $tab === 'inscripciones' ? 'bg-white border border-b-white border-gray-200 text-green-700 -mb-px' : 'text-gray-500 hover:text-gray-700' }}">
             📋 Inscripciones ({{ $inscripciones->count() }})
         </button>
+        @if(!$torneo->esMaster())
         <button wire:click="$set('tab', 'draws')"
                 class="px-5 py-2.5 text-sm font-medium rounded-t-lg transition
                     {{ $tab === 'draws' ? 'bg-white border border-b-white border-gray-200 text-green-700 -mb-px' : 'text-gray-500 hover:text-gray-700' }}">
             🏆 Draws ({{ $draws->count() }})
         </button>
+        @endif
+        @if($torneo->esMaster())
         <button wire:click="$set('tab', 'masters')"
                 class="px-5 py-2.5 text-sm font-medium rounded-t-lg transition
                     {{ $tab === 'masters' ? 'bg-white border border-b-white border-gray-200 text-green-700 -mb-px' : 'text-gray-500 hover:text-gray-700' }}">
-            ⭐ Masters ({{ $masters->count() }})
+            ⭐ Zonas y Fase Final ({{ $masters->count() }})
         </button>
+        @endif
     </div>
 
     {{-- ===================== TAB INSCRIPCIONES ===================== --}}

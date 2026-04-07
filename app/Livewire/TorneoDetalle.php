@@ -52,6 +52,9 @@ class TorneoDetalle extends Component
     public function mount(Torneo $torneo): void
     {
         $this->torneo = $torneo;
+        if ($torneo->esMaster()) {
+            $this->tab = 'masters';
+        }
     }
 
     public function guardarInscripcion(): void
