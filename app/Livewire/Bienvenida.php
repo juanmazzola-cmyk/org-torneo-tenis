@@ -13,7 +13,9 @@ class Bienvenida extends Component
         $torneos = Torneo::with([
             'draws.categoria',
             'draws.partidos' => fn($q) => $q->where('ronda', 1)->whereNotNull('ganador_id'),
-        ])->where('tipo', 'normal')->orderBy('fecha_inicio', 'desc')->get();
+        ])->orderBy('fecha_inicio', 'desc')->get()
+          ->filter(fn($t) => ($t->tipo ?? 'normal') !== 'master')
+          ->values();
         $clubNombre = Config::get('club_nombre', 'Club de Tenis');
         $clubCiudad = Config::get('club_ciudad', '');
 

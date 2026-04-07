@@ -89,9 +89,7 @@ class Torneos extends Component
     public function render()
     {
         return view('livewire.torneos', [
-            'torneos' => Torneo::withCount('inscripciones')
-                ->with(['masters.grupos.jugadoresGrupo'])
-                ->orderByDesc('fecha_inicio')->get(),
+            'torneos' => Torneo::withCount('inscripciones')->orderByDesc('fecha_inicio')->get(),
         ])->layout('layouts.app');
     }
 }
