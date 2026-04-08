@@ -28,7 +28,10 @@ Route::get('/salir', function () {
     return response(
         '<!DOCTYPE html><html><head><meta charset="UTF-8">' .
         '<style>*{margin:0;padding:0}body{background:#14532d;height:100vh}</style></head>' .
-        '<body><script>window.close();</script></body></html>'
+        '<body><script>' .
+        'window.close();' .
+        'setTimeout(function(){ history.go(-(history.length + 1)); }, 50);' .
+        '</script></body></html>'
     )->header('Content-Type', 'text/html');
 })->name('salir');
 Route::get('/live/{torneo}/{draw}',            DrawPublico::class)->name('live.draw');
