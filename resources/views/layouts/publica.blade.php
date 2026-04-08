@@ -23,11 +23,7 @@
         }
 
         function salir() {
-            // window.open con _self marca la ventana como "abierta por script",
-            // lo que permite que /salir llame window.close() sin restricciones,
-            // sin importar cuántas navegaciones haya habido antes.
-            // El fondo verde de /salir evita el flash blanco.
-            window.open('/salir', '_self');
+            window.close();
         }
     </script>
 </body>
