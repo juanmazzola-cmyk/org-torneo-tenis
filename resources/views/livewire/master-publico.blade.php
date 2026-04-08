@@ -1,15 +1,17 @@
-<div style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;"
-     class="px-3 py-4">
+<div style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
     <!-- Header -->
-    <div class="text-center mb-4">
-        <div class="text-2xl mb-1">⭐</div>
-        <h1 class="text-xl font-extrabold text-white drop-shadow-lg">
-            {{ $master->torneo->nombre }}
-        </h1>
-        <p class="text-yellow-200 text-sm">Master — Categoría {{ $master->categoria->nombre }}</p>
-        <p class="text-green-300 text-xs mt-0.5">Round Robin · 2 zonas</p>
+    <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <a href="{{ route('bienvenida') }}" wire:navigate class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</a>
+            <div class="min-w-0">
+                <h1 class="text-white font-bold text-base truncate">⭐ {{ $master->torneo->nombre }}</h1>
+                <p class="text-yellow-300 text-xs">Master — Categoría {{ $master->categoria->nombre }}</p>
+            </div>
+        </div>
     </div>
+
+    <div class="px-3 py-4">
 
     <div class="max-w-2xl mx-auto space-y-4">
 
@@ -158,11 +160,6 @@
         </div>
         @endif
 
-        <!-- Volver -->
-        <div class="text-center pb-4">
-            <a href="{{ route('bienvenida') }}" wire:navigate
-               class="text-white/50 hover:text-white/80 text-xs transition">← Volver al panel</a>
-        </div>
-
+    </div>
     </div>
 </div>

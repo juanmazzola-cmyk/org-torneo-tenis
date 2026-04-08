@@ -116,12 +116,8 @@
                 @endif
             </div>
 
-            {{-- Volver + Admin --}}
-            <div class="px-3 pt-1 pb-3 border-t border-white/10 space-y-2">
-                <a href="{{ app()->environment('local') ? 'http://localhost/reservas-canchas-tenis/public' : 'https://ateneo.proyectosia.com.ar' }}"
-                   class="flex items-center justify-center gap-2 bg-[#0057a8] hover:bg-blue-700 text-white font-bold text-sm px-4 py-3 rounded-xl transition w-full">
-                    ← Volver al Sistema de Reservas
-                </a>
+            {{-- Admin --}}
+            <div class="px-3 pt-1 pb-3 border-t border-white/10">
                 <div class="text-center">
                     <a href="{{ route('admin.login') }}" wire:navigate
                        class="text-white/40 hover:text-white/70 text-xs transition">
