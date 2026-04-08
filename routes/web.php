@@ -13,6 +13,7 @@ use App\Livewire\Torneos;
 use App\Livewire\TorneoDetalle;
 use App\Livewire\DrawBracket;
 use App\Livewire\MasterDetalle;
+use App\Livewire\MasterPublico;
 use App\Livewire\RankingLista;
 use App\Livewire\Configuracion;
 use App\Livewire\MensajeWhatsapp;
@@ -25,6 +26,7 @@ use App\Models\Torneo;
 Route::get('/', Bienvenida::class)->name('bienvenida');
 Route::get('/live/{torneo}/{draw}',            DrawPublico::class)->name('live.draw');
 Route::get('/live/{torneo}/{draw}/resultados', ResultadosPublico::class)->name('live.resultados');
+Route::get('/live/{torneo}/master/{master}',   MasterPublico::class)->name('live.master');
 Route::get('/ranking-publico',                 RankingPublico::class)->name('ranking.publico');
 Route::get('/torneos-publico',                 TorneosPublico::class)->name('torneos.publico');
 

@@ -72,9 +72,24 @@
                                 @endif
                             </div>
                             @if(($torneo->tipo ?? 'normal') === 'master')
-                                <div class="px-3 py-2">
-                                    <span class="text-yellow-300 text-xs font-semibold">⭐ Torneo Master — Round Robin</span>
-                                </div>
+                                @if($torneo->masters->isEmpty())
+                                    <div class="px-3 py-2 text-yellow-300/60 text-xs italic">⭐ Master — Sin categorías configuradas aún.</div>
+                                @else
+                                    <div class="divide-y divide-white/10">
+                                        @foreach($torneo->masters as $master)
+                                            <div class="px-3 py-2 flex items-center gap-2">
+                                                <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">
+                                                    ⭐ Cat. {{ $master->categoria->nombre }}
+                                                    <span class="text-yellow-300/70 font-normal">Master</span>
+                                                </p>
+                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
+                                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                                    Ver Master
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
                             @elseif($torneo->draws->isEmpty())
                                 <div class="px-3 py-2 text-green-300/60 text-xs italic">Draw no disponible aún.</div>
                             @else
