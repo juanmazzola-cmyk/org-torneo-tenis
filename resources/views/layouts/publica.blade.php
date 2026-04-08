@@ -23,14 +23,10 @@
         }
 
         function salir() {
-            // En PWA standalone intenta cerrar la ventana.
-            // Si el historial creció (wire:navigate), retrocede todo y cierra.
-            if (window.history.length > 1) {
-                window.history.go(-(window.history.length - 1));
-                setTimeout(() => window.close(), 150);
-            } else {
-                window.close();
-            }
+            // window.open('about:blank', '_self') convierte la ventana en
+            // "abierta por script", lo que permite cerrarla sin importar
+            // cuántas navegaciones haya en el historial.
+            window.open('about:blank', '_self').close();
         }
     </script>
 </body>
