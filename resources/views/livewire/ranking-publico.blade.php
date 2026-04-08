@@ -34,7 +34,9 @@
                             Categoría {{ $bloque['categoria']->nombre }}
                         </span>
                         @if(count($bloque['torneos']) > 1)
-                        <span class="scroll-hint text-white/50 text-sm animate-pulse select-none" title="Deslizá para ver más torneos">→</span>
+                        <span class="scroll-hint inline-flex items-center gap-1 bg-white/20 border border-white/40 text-white text-xs font-bold px-2.5 py-1 rounded-full animate-pulse select-none">
+                            deslizá &nbsp;›
+                        </span>
                         @endif
                     </h2>
 
