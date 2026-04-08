@@ -24,6 +24,13 @@ use App\Models\Torneo;
 
 // ── Pantalla pública ──────────────────────────────────────────────────
 Route::get('/', Bienvenida::class)->name('bienvenida');
+Route::get('/salir', function () {
+    return response(
+        '<!DOCTYPE html><html><head><meta charset="UTF-8">' .
+        '<style>*{margin:0;padding:0}body{background:#14532d;height:100vh}</style></head>' .
+        '<body><script>window.close();</script></body></html>'
+    )->header('Content-Type', 'text/html');
+})->name('salir');
 Route::get('/live/{torneo}/{draw}',            DrawPublico::class)->name('live.draw');
 Route::get('/live/{torneo}/{draw}/resultados', ResultadosPublico::class)->name('live.resultados');
 Route::get('/live/{torneo}/master/{master}',   MasterPublico::class)->name('live.master');

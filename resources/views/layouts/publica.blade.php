@@ -23,12 +23,11 @@
         }
 
         function salir() {
-            // Intenta cerrar directo (funciona en standalone si no hubo navegación)
-            window.close();
-            // Fallback: retrocede más páginas de las que existen.
-            // En Android PWA, cuando no queda historial el sistema cierra la app
-            // y devuelve al launcher, sin pantalla en blanco.
-            setTimeout(function() { window.history.go(-100); }, 50);
+            // window.open con _self marca la ventana como "abierta por script",
+            // lo que permite que /salir llame window.close() sin restricciones,
+            // sin importar cuántas navegaciones haya habido antes.
+            // El fondo verde de /salir evita el flash blanco.
+            window.open('/salir', '_self');
         }
     </script>
 </body>
