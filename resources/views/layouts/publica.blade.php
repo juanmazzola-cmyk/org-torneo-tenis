@@ -22,9 +22,6 @@
             navigator.serviceWorker.register('/sw.js');
         }
 
-        function salir() {
-            window.close();
-        }
     </script>
 </body>
 </html>
