@@ -2,20 +2,42 @@
      style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
     {{-- ═══════════════════════════════════════════════════════
+         IFRAME OVERLAY (Draw / Resultados / Ver Master)
+         Carga en su propio contexto — el historial del padre
+         nunca cambia, Salir siempre funciona.
+    ═══════════════════════════════════════════════════════ --}}
+    @if($iframeUrl)
+    <div class="fixed inset-0 z-50 flex flex-col bg-green-950">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-green-900/95 border-b border-green-700/50 shrink-0">
+            <button wire:click="cerrarIframe"
+                    class="text-green-400 hover:text-white transition text-sm font-semibold">
+                ← Volver
+            </button>
+            <button onclick="window.close()"
+                    class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow">
+                Salir
+            </button>
+        </div>
+        <iframe src="{{ $iframeUrl }}"
+                class="flex-1 w-full border-0 bg-green-950"
+                style="height: calc(100dvh - 48px)">
+        </iframe>
+    </div>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════
          PANEL: RANKING
     ═══════════════════════════════════════════════════════ --}}
     @if($panel === 'ranking')
 
     <div class="flex flex-col min-h-screen">
-        {{-- Header --}}
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
             <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
                     <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <select wire:model.live="filtroCategoria"
+                <select wire:model.live="filtroCategoria"
                         class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
                                focus:outline-none focus:ring-2 focus:ring-green-400">
                     <option value="">Todas las categorías</option>
@@ -23,15 +45,9 @@
                         <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
                     @endforeach
                 </select>
-                    <button onclick="window.close()"
-                            class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
-                        Salir
-                    </button>
-                </div>
             </div>
         </div>
 
-        {{-- Contenido --}}
         <div class="flex-1 max-w-5xl mx-auto w-full px-4 py-8 space-y-10">
             @if(empty($categoriasData))
                 <div class="bg-white/10 rounded-2xl p-10 text-center text-green-200">
@@ -109,19 +125,13 @@
     @elseif($panel === 'torneos')
 
     <div class="flex flex-col min-h-screen">
-        {{-- Header --}}
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
             <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                 <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                <h1 class="text-white font-bold text-lg flex-1">🏅 Torneos finalizados</h1>
-                <button onclick="window.close()"
-                        class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-green-50 transition shrink-0">
-                    Salir
-                </button>
+                <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
             </div>
         </div>
 
-        {{-- Contenido --}}
         <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-8 space-y-5">
             @if($torneosFinalizados->isEmpty())
                 <div class="bg-white/10 rounded-2xl p-10 text-center text-green-200">
@@ -145,17 +155,15 @@
                     <div class="divide-y divide-white/10">
                         @foreach($torneo->masters->where('estado', 'finalizado') as $master)
                             <div class="px-5 py-3 flex items-center gap-2">
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-white font-semibold text-sm">
-                                        ⭐ Categoría {{ $master->categoria->nombre }}
-                                        <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
-                                    </p>
-                                </div>
-                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
-                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
-                                          text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                <p class="text-white font-semibold text-sm flex-1 min-w-0">
+                                    ⭐ Categoría {{ $master->categoria->nombre }}
+                                    <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
+                                </p>
+                                <button wire:click="abrirIframe('{{ route('live.master', [$torneo->id, $master->id]) }}')"
+                                        class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
+                                               text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                     Ver Master
-                                </a>
+                                </button>
                             </div>
                         @endforeach
                         @foreach($torneo->draws as $draw)
@@ -165,16 +173,16 @@
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Draw de {{ $draw->tamano }}</span>
                                 </p>
                                 <div class="flex gap-2">
-                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}" wire:navigate
-                                       class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
-                                              text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                                    <button wire:click="abrirIframe('{{ route('live.resultados', [$torneo->id, $draw->id]) }}')"
+                                            class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
+                                                   text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
                                         📋 Resultados
-                                    </a>
-                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
-                                       class="flex-1 text-center bg-green-500 hover:bg-green-400
-                                              text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
+                                    </button>
+                                    <button wire:click="abrirIframe('{{ route('live.draw', [$torneo->id, $draw->id]) }}')"
+                                            class="flex-1 text-center bg-green-500 hover:bg-green-400
+                                                   text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
                                         🎯 Draw
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         @endforeach
@@ -190,7 +198,6 @@
     ═══════════════════════════════════════════════════════ --}}
     @else
 
-    {{-- Barra superior --}}
     <div class="flex justify-end px-4 pt-3 flex-shrink-0">
         <button onclick="window.close()"
                 class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
@@ -198,7 +205,6 @@
         </button>
     </div>
 
-    {{-- Header --}}
     <div class="text-center pt-2 pb-2 px-4 flex-shrink-0">
         <div class="text-3xl mb-1">🎾</div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">
@@ -210,7 +216,6 @@
         <p class="text-green-300 text-xs mt-0.5 tracking-wide">Gestión de torneos</p>
     </div>
 
-    {{-- Panel Online --}}
     <div class="max-w-2xl mx-auto w-full px-3 pb-6">
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
 
@@ -219,11 +224,10 @@
                 <h2 class="text-white font-bold text-base">Panel Online</h2>
             </div>
 
-            {{-- Ranking + Torneos Finalizados --}}
             <div class="px-3 pt-3 pb-2 grid grid-cols-2 gap-2">
                 <button wire:click="abrirRanking"
-                   class="flex items-center gap-2 bg-yellow-400/20 border border-yellow-300/30
-                          rounded-xl px-3 py-2.5 hover:bg-yellow-400/30 transition text-left w-full">
+                        class="flex items-center gap-2 bg-yellow-400/20 border border-yellow-300/30
+                               rounded-xl px-3 py-2.5 hover:bg-yellow-400/30 transition text-left w-full">
                     <span class="text-xl shrink-0">🏆</span>
                     <div class="min-w-0">
                         <p class="text-white font-semibold text-xs leading-tight">Ranking General</p>
@@ -231,8 +235,8 @@
                     </div>
                 </button>
                 <button wire:click="abrirTorneos"
-                   class="flex items-center gap-2 bg-white/15 border border-white/20
-                          rounded-xl px-3 py-2.5 hover:bg-white/25 transition text-left w-full">
+                        class="flex items-center gap-2 bg-white/15 border border-white/20
+                               rounded-xl px-3 py-2.5 hover:bg-white/25 transition text-left w-full">
                     <span class="text-xl shrink-0">🏅</span>
                     <div class="min-w-0">
                         <p class="text-white font-semibold text-xs leading-tight">Torneos finalizados</p>
@@ -241,7 +245,6 @@
                 </button>
             </div>
 
-            {{-- Torneos activos --}}
             <div class="px-3 pb-3 pt-1 space-y-2">
                 @if($torneos->isEmpty())
                     <div class="text-green-200/70 text-xs italic text-center py-3">
@@ -278,10 +281,10 @@
                                                     ⭐ Cat. {{ $master->categoria->nombre }}
                                                     <span class="text-yellow-300/70 font-normal">Master</span>
                                                 </p>
-                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
-                                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                                <button wire:click="abrirIframe('{{ route('live.master', [$torneo->id, $master->id]) }}')"
+                                                        class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                                     Ver Master
-                                                </a>
+                                                </button>
                                             </div>
                                         @endforeach
                                     </div>
@@ -294,14 +297,14 @@
                                         <div class="px-3 py-2 flex items-center gap-2">
                                             <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
                                             <div class="flex gap-1.5 shrink-0">
-                                                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}" wire:navigate
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                <button wire:click="abrirIframe('{{ route('live.resultados', [$torneo->id, $draw->id]) }}')"
+                                                        class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     📋 Resultados
-                                                </a>
-                                                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                </button>
+                                                <button wire:click="abrirIframe('{{ route('live.draw', [$torneo->id, $draw->id]) }}')"
+                                                        class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     🎯 Draw
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     @endforeach
@@ -312,7 +315,6 @@
                 @endif
             </div>
 
-            {{-- Admin --}}
             <div class="px-3 pt-1 pb-3 border-t border-white/10">
                 <div class="text-center">
                     <a href="{{ route('admin.login') }}" wire:navigate
@@ -331,7 +333,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', bindScrollHints);
-document.addEventListener('livewire:navigated', bindScrollHints);
 document.addEventListener('livewire:updated', bindScrollHints);
 
 function bindScrollHints() {

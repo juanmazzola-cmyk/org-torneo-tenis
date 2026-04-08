@@ -12,6 +12,7 @@ class Bienvenida extends Component
 {
     public string $panel = '';           // '' | 'ranking' | 'torneos'
     public string $filtroCategoria = '';
+    public string $iframeUrl = '';       // URL cargada en el iframe overlay
 
     public function abrirRanking(): void
     {
@@ -23,9 +24,20 @@ class Bienvenida extends Component
         $this->panel = 'torneos';
     }
 
+    public function abrirIframe(string $url): void
+    {
+        $this->iframeUrl = $url;
+    }
+
+    public function cerrarIframe(): void
+    {
+        $this->iframeUrl = '';
+    }
+
     public function cerrar(): void
     {
-        $this->panel = '';
+        $this->panel      = '';
+        $this->iframeUrl  = '';
         $this->filtroCategoria = '';
     }
 
