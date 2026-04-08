@@ -4,7 +4,7 @@
     {{-- Header --}}
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-2xl mx-auto px-4 md:px-8 py-3 flex items-center gap-3">
-            <a href="{{ route('bienvenida') }}" wire:navigate class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</a>
+            <a href="#" onclick="history.back(); return false;" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</a>
             <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
         </div>
     </div>
