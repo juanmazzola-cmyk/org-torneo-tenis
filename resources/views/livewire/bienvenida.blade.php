@@ -11,10 +11,11 @@
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
             <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
-                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm">← Volver</button>
+                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
                     <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
                 </div>
-                <select wire:model.live="filtroCategoria"
+                <div class="flex items-center gap-2 shrink-0">
+                    <select wire:model.live="filtroCategoria"
                         class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
                                focus:outline-none focus:ring-2 focus:ring-green-400">
                     <option value="">Todas las categorías</option>
@@ -22,6 +23,11 @@
                         <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
                     @endforeach
                 </select>
+                    <button onclick="window.close()"
+                            class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
+                        Salir
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -107,7 +113,11 @@
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
             <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
                 <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
+                <h1 class="text-white font-bold text-lg flex-1">🏅 Torneos finalizados</h1>
+                <button onclick="window.close()"
+                        class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow hover:bg-green-50 transition shrink-0">
+                    Salir
+                </button>
             </div>
         </div>
 
