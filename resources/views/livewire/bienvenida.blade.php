@@ -1,8 +1,16 @@
 <div wire:poll.30s class="flex flex-col"
      style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
+    {{-- Barra superior --}}
+    <div class="flex justify-end px-4 pt-3 flex-shrink-0">
+        <button onclick="window.close()"
+                class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
+            Salir
+        </button>
+    </div>
+
     {{-- Header compacto --}}
-    <div class="text-center pt-4 pb-2 px-4 flex-shrink-0">
+    <div class="text-center pt-2 pb-2 px-4 flex-shrink-0">
         <div class="text-3xl mb-1">🎾</div>
         <h1 class="text-2xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">
             {{ $clubNombre }}
