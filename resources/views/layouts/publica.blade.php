@@ -23,10 +23,12 @@
         }
 
         function salir() {
-            // window.open('about:blank', '_self') convierte la ventana en
-            // "abierta por script", lo que permite cerrarla sin importar
-            // cuántas navegaciones haya en el historial.
-            window.open('about:blank', '_self').close();
+            // Intenta cerrar directo (funciona en standalone si no hubo navegación)
+            window.close();
+            // Fallback: retrocede más páginas de las que existen.
+            // En Android PWA, cuando no queda historial el sistema cierra la app
+            // y devuelve al launcher, sin pantalla en blanco.
+            setTimeout(function() { window.history.go(-100); }, 50);
         }
     </script>
 </body>
