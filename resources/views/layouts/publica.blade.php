@@ -21,6 +21,17 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');
         }
+
+        function salir() {
+            // En PWA standalone intenta cerrar la ventana.
+            // Si el historial creció (wire:navigate), retrocede todo y cierra.
+            if (window.history.length > 1) {
+                window.history.go(-(window.history.length - 1));
+                setTimeout(() => window.close(), 150);
+            } else {
+                window.close();
+            }
+        }
     </script>
 </body>
 </html>

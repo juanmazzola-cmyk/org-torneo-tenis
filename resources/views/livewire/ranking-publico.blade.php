@@ -29,13 +29,16 @@
         @else
             @foreach($categoriasData as $bloque)
                 <div>
-                    <h2 class="text-white font-bold text-lg mb-4">
+                    <h2 class="text-white font-bold text-lg mb-4 flex items-center gap-2">
                         <span class="bg-white/20 rounded-full px-4 py-1.5 text-sm">
                             Categoría {{ $bloque['categoria']->nombre }}
                         </span>
+                        @if(count($bloque['torneos']) > 1)
+                        <span class="scroll-hint text-white/50 text-sm animate-pulse select-none" title="Deslizá para ver más torneos">→</span>
+                        @endif
                     </h2>
 
-                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-x-auto shadow-xl">
+                    <div class="scroll-table bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-x-auto shadow-xl">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="bg-white/10 text-green-200 uppercase text-xs tracking-wider">
@@ -88,3 +91,23 @@
         Ranking generado automáticamente desde los resultados del draw
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', bindScrollHints);
+document.addEventListener('livewire:navigated', bindScrollHints);
+
+function bindScrollHints() {
+    document.querySelectorAll('.scroll-table').forEach(function(table) {
+        var hint = table.closest('div').previousElementSibling?.querySelector('.scroll-hint');
+        if (!hint) return;
+
+        function update() {
+            var atEnd = table.scrollLeft + table.clientWidth >= table.scrollWidth - 4;
+            hint.style.visibility = atEnd ? 'hidden' : 'visible';
+        }
+
+        update();
+        table.addEventListener('scroll', update);
+    });
+}
+</script>

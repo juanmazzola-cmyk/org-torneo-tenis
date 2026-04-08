@@ -3,7 +3,7 @@
 
     {{-- Barra superior --}}
     <div class="flex justify-end px-4 pt-3 flex-shrink-0">
-        <button onclick="window.close()"
+        <button onclick="salir()"
                 class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
             Salir
         </button>
