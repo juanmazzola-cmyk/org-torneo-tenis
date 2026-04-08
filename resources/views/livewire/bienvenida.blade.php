@@ -39,7 +39,7 @@
                           rounded-xl px-3 py-2.5 hover:bg-white/25 transition">
                     <span class="text-xl shrink-0">🏅</span>
                     <div class="min-w-0">
-                        <p class="text-white font-semibold text-xs leading-tight">Finalizados</p>
+                        <p class="text-white font-semibold text-xs leading-tight">Torneos finalizados</p>
                         <p class="text-green-200 text-xs leading-tight">Resultados y draws</p>
                     </div>
                 </a>

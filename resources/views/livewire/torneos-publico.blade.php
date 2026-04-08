@@ -5,7 +5,7 @@
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-2xl mx-auto px-4 md:px-8 py-3 flex items-center gap-3">
             <a href="{{ route('bienvenida') }}" wire:navigate class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</a>
-            <h1 class="text-white font-bold text-lg">🏅 Torneos Finalizados</h1>
+            <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
         </div>
     </div>
 
@@ -36,6 +36,21 @@
                     </div>
 
                     <div class="divide-y divide-white/10">
+                        @foreach($torneo->masters->where('estado', 'finalizado') as $master)
+                            <div class="px-5 py-3 flex items-center gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-white font-semibold text-sm">
+                                        ⭐ Categoría {{ $master->categoria->nombre }}
+                                        <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
+                                    </p>
+                                </div>
+                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
+                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
+                                          text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                    Ver Master
+                                </a>
+                            </div>
+                        @endforeach
                         @foreach($torneo->draws as $draw)
                             <div class="px-5 py-3">
                                 <p class="text-white font-semibold text-sm mb-2">
