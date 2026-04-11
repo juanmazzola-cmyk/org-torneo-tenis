@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" style="height:100%; overflow:hidden">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +22,7 @@
         .nav-link.active { background: #16a34a; font-weight: 700; }
     </style>
 </head>
-<body style="background:#f3f4f6; min-height:100vh; overflow-x:hidden; margin:0">
+<body style="background:#f3f4f6; height:100%; display:flex; flex-direction:column; overflow:hidden; margin:0">
 
     <!-- Navbar -->
     <nav style="background:#166534; color:white; box-shadow:0 2px 8px rgba(0,0,0,.3)">
@@ -109,8 +109,10 @@
     </nav>
 
     <!-- Contenido -->
-    <main style="max-width:1280px; margin:0 auto; padding:16px">
-        {{ $slot }}
+    <main style="flex:1; min-height:0; overflow-y:auto; overflow-x:hidden">
+        <div style="max-width:1280px; margin:0 auto; padding:16px">
+            {{ $slot }}
+        </div>
     </main>
 
     <script>

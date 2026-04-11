@@ -7,7 +7,7 @@
          nunca cambia, Salir siempre funciona.
     ═══════════════════════════════════════════════════════ --}}
     @if($iframeUrl)
-    <div class="fixed inset-0 z-50 flex flex-col bg-green-950">
+    <div wire:key="iframe-{{ md5($iframeUrl) }}" class="fixed inset-0 z-50 flex flex-col bg-green-950">
         <div class="flex items-center justify-between px-4 py-2.5 bg-green-900/95 border-b border-green-700/50 shrink-0">
             <button wire:click="cerrarIframe"
                     class="text-green-400 hover:text-white transition text-sm font-semibold">
@@ -194,6 +194,118 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════
+         PANEL: MIS PARTIDOS
+    ═══════════════════════════════════════════════════════ --}}
+    @elseif($panel === 'misPartidos')
+
+    <div class="flex flex-col min-h-screen">
+        <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
+            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                <h1 class="text-white font-bold text-lg">🎾 Mis Partidos</h1>
+            </div>
+        </div>
+
+        <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-6 space-y-5">
+
+            {{-- Buscador de jugador --}}
+            @if(!$jugadorSeleccionado)
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4">
+                <p class="text-green-200 text-sm mb-3">Buscá tu nombre para ver tus partidos:</p>
+                <input wire:model.live.debounce.300ms="busqueda"
+                       type="text"
+                       placeholder="Escribí tu apellido o nombre..."
+                       autocomplete="off"
+                       class="w-full bg-green-800/60 border border-green-600 text-white placeholder-green-400
+                              text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-400">
+
+                @if(strlen($busqueda) >= 2)
+                    @if($jugadores->isEmpty())
+                        <p class="text-green-400/70 text-xs mt-3 text-center italic">No se encontraron jugadores.</p>
+                    @else
+                        <div class="mt-3 space-y-1">
+                            @foreach($jugadores as $jug)
+                                <button wire:click="seleccionarJugador({{ $jug->id }})"
+                                        class="w-full text-left px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20
+                                               border border-white/15 text-white text-sm transition">
+                                    {{ $jug->apellido }}, {{ $jug->nombre }}
+                                    <span class="text-green-300 text-xs ml-1">Cat. {{ $jug->categoria->nombre ?? '—' }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                @elseif(strlen($busqueda) > 0)
+                    <p class="text-green-400/70 text-xs mt-2">Escribí al menos 2 caracteres.</p>
+                @endif
+            </div>
+            @else
+
+            {{-- Jugador seleccionado --}}
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-white font-bold text-base">{{ $jugadorSeleccionado->apellido }}, {{ $jugadorSeleccionado->nombre }}</p>
+                    <p class="text-green-300 text-xs">Cat. {{ $jugadorSeleccionado->categoria->nombre ?? '—' }}</p>
+                </div>
+                <button wire:click="$set('jugadorId', null)"
+                        class="text-green-400 hover:text-white text-xs transition border border-green-600/50
+                               rounded-lg px-3 py-1.5">
+                    Cambiar jugador
+                </button>
+            </div>
+
+            @if(empty($misPartidosPorAnio))
+                <div class="bg-white/10 rounded-2xl p-8 text-center text-green-200">
+                    No hay partidos registrados para este jugador.
+                </div>
+            @else
+                @foreach($misPartidosPorAnio as $anio => $partidos)
+                <div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="h-px flex-1 bg-white/20"></div>
+                        <span class="text-white font-bold text-sm uppercase tracking-wider px-4 py-1
+                                     rounded-full bg-white/15">{{ $anio }}</span>
+                        <div class="h-px flex-1 bg-white/20"></div>
+                    </div>
+
+                    <div class="space-y-2">
+                        @foreach($partidos as $partido)
+                        <div class="bg-white/10 border border-white/20 rounded-xl px-4 py-3
+                                    {{ $partido['gano'] ? 'border-green-400/40' : 'border-red-400/20' }}">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <div class="min-w-0">
+                                    <p class="text-white/80 text-xs font-semibold truncate">{{ $partido['torneo'] }}</p>
+                                    <p class="text-green-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
+                                </div>
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0
+                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-500/20 text-red-300' }}">
+                                    {{ $partido['gano'] ? 'Ganó' : 'Perdió' }}
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-white/60 text-sm">
+                                    vs
+                                    @if($partido['rival'])
+                                        <span class="text-white/80">{{ $partido['rival']->apellido }}, {{ $partido['rival']->nombre }}</span>
+                                    @else
+                                        <span class="italic">—</span>
+                                    @endif
+                                </p>
+                                @if($partido['resultado'])
+                                    <span class="text-green-200 font-mono text-sm font-bold shrink-0">{{ $partido['resultado'] }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endforeach
+            @endif
+
+            @endif
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════
          PANTALLA PRINCIPAL
     ═══════════════════════════════════════════════════════ --}}
     @else
@@ -241,6 +353,15 @@
                     <div class="min-w-0">
                         <p class="text-white font-semibold text-xs leading-tight">Torneos finalizados</p>
                         <p class="text-green-200 text-xs leading-tight">Resultados y draws</p>
+                    </div>
+                </button>
+                <button wire:click="abrirMisPartidos"
+                        class="col-span-2 flex items-center gap-2 bg-blue-400/20 border border-blue-300/30
+                               rounded-xl px-3 py-2.5 hover:bg-blue-400/30 transition text-left w-full">
+                    <span class="text-xl shrink-0">🎾</span>
+                    <div class="min-w-0">
+                        <p class="text-white font-semibold text-xs leading-tight">Mis Partidos</p>
+                        <p class="text-blue-200 text-xs leading-tight">Buscá tus partidos por año</p>
                     </div>
                 </button>
             </div>
