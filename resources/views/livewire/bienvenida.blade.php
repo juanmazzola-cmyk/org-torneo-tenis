@@ -216,8 +216,7 @@
                        type="text"
                        placeholder="Escribí tu apellido o nombre..."
                        autocomplete="off"
-                       class="w-full bg-green-800/60 border border-green-600 text-white placeholder-green-400
-                              text-sm rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-400">
+                       style="width:100%; background:rgba(20,83,45,0.6); border:1px solid #16a34a; color:white; font-size:.875rem; border-radius:.5rem; padding:10px 16px; outline:none; box-sizing:border-box">
 
                 @if(strlen($busqueda) >= 2)
                     @if($jugadores->isEmpty())
@@ -226,8 +225,7 @@
                         <div class="mt-3 space-y-1">
                             @foreach($jugadores as $jug)
                                 <button wire:click="seleccionarJugador({{ $jug->id }})"
-                                        class="w-full text-left px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20
-                                               border border-white/15 text-white text-sm transition">
+                                        style="width:100%; text-align:left; padding:10px 16px; border-radius:.75rem; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; font-size:.875rem; cursor:pointer; display:block; margin-bottom:4px">
                                     {{ $jug->apellido }}, {{ $jug->nombre }}
                                     <span class="text-green-300 text-xs ml-1">Cat. {{ $jug->categoria->nombre ?? '—' }}</span>
                                 </button>
@@ -356,12 +354,11 @@
                     </div>
                 </button>
                 <button wire:click="abrirMisPartidos"
-                        class="col-span-2 flex items-center gap-2 bg-blue-400/20 border border-blue-300/30
-                               rounded-xl px-3 py-2.5 hover:bg-blue-400/30 transition text-left w-full">
-                    <span class="text-xl shrink-0">🎾</span>
-                    <div class="min-w-0">
+                        style="grid-column:1/-1; background:rgba(99,179,237,0.15); border:1px solid rgba(144,205,244,0.3); border-radius:0.75rem; padding:10px 12px; text-align:left; width:100%; display:flex; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
+                    <span style="font-size:1.25rem; flex-shrink:0">🎾</span>
+                    <div>
                         <p class="text-white font-semibold text-xs leading-tight">Mis Partidos</p>
-                        <p class="text-blue-200 text-xs leading-tight">Buscá tus partidos por año</p>
+                        <p class="text-green-200 text-xs leading-tight">Buscá tus partidos por año</p>
                     </div>
                 </button>
             </div>
