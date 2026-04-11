@@ -22,14 +22,6 @@ use App\Models\Master;
 use App\Models\Partido;
 use App\Models\Torneo;
 
-// ── Limpieza de cache (temporal) ─────────────────────────────────────
-Route::get('/limpiar-cache-9f2c80a', function () {
-    if (function_exists('opcache_reset')) opcache_reset();
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    return 'Cache limpiado OK — ' . now();
-});
-
 // ── Pantalla pública ──────────────────────────────────────────────────
 Route::get('/', Bienvenida::class)->name('bienvenida');
 Route::get('/live/{torneo}/{draw}',            DrawPublico::class)->name('live.draw');
