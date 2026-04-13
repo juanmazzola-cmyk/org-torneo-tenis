@@ -233,7 +233,7 @@
                         </div>
                     @endif
                 @elseif(strlen($busqueda) > 0)
-                    <p class="text-green-400/70 text-xs mt-2">Escribí al menos 2 caracteres.</p>
+                    <p class="text-yellow-300 text-xs mt-2">Escribí al menos 2 caracteres.</p>
                 @endif
             </div>
             @else
@@ -245,8 +245,8 @@
                     <p class="text-green-300 text-xs">Cat. {{ $jugadorSeleccionado->categoria->nombre ?? '—' }}</p>
                 </div>
                 <button wire:click="$set('jugadorId', null)"
-                        class="text-green-400 hover:text-white text-xs transition border border-green-600/50
-                               rounded-lg px-3 py-1.5">
+                        class="text-green-300 hover:text-white text-sm font-semibold transition border border-green-500/70
+                               rounded-lg px-4 py-2">
                     Cambiar jugador
                 </button>
             </div>
@@ -272,10 +272,10 @@
                             <div class="flex items-start justify-between gap-2 mb-1">
                                 <div class="min-w-0">
                                     <p class="text-white/80 text-xs font-semibold truncate">{{ $partido['torneo'] }}</p>
-                                    <p class="text-green-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
+                                    <p class="text-yellow-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
                                 </div>
                                 <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0
-                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-500/20 text-red-300' }}">
+                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-600/40 text-red-400' }}">
                                     {{ $partido['gano'] ? 'Ganó' : 'Perdió' }}
                                 </span>
                             </div>
@@ -304,6 +304,26 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════
+         PANEL: INFORMACIÓN
+    ═══════════════════════════════════════════════════════ --}}
+    @elseif($panel === 'info')
+
+    <div class="flex flex-col min-h-screen">
+        <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
+            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                <h1 class="text-white font-bold text-lg">ℹ️ Información</h1>
+            </div>
+        </div>
+
+        <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
+            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
+                <div class="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════
          PANTALLA PRINCIPAL
     ═══════════════════════════════════════════════════════ --}}
     @else
@@ -315,65 +335,83 @@
         </button>
     </div>
 
-    <div class="text-center pt-2 pb-2 px-4 flex-shrink-0">
-        <div class="text-3xl mb-1">🎾</div>
-        <h1 class="text-2xl font-extrabold text-white tracking-tight drop-shadow-lg leading-tight">
+    <div class="text-center pt-5 pb-5 px-4 flex-shrink-0">
+        <div class="text-5xl mb-2">🎾</div>
+        <h1 class="text-4xl font-extrabold text-white tracking-tight drop-shadow-xl leading-tight">
             {{ $clubNombre }}
         </h1>
         @if($clubCiudad)
-            <p class="text-yellow-200 text-sm">{{ $clubCiudad }}</p>
+            <p class="text-yellow-200 text-base mt-1.5 font-medium">{{ $clubCiudad }}</p>
         @endif
-        <p class="text-green-300 text-xs mt-0.5 tracking-wide">Gestión de torneos</p>
+        <p class="text-green-300 text-sm mt-1 tracking-widest uppercase font-semibold">Gestión de torneos</p>
     </div>
 
-    <div class="max-w-2xl mx-auto w-full px-3 pb-6">
-        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden shadow-xl">
+    <div class="max-w-2xl mx-auto w-full px-3 pb-8">
+        <div class="bg-white/10 backdrop-blur-sm border border-white/25 rounded-2xl overflow-hidden shadow-2xl">
 
-            <div class="bg-white/10 px-4 py-2.5 flex items-center gap-2 border-b border-white/10">
-                <span class="text-lg">📺</span>
-                <h2 class="text-white font-bold text-base">Panel Online</h2>
+            <div class="bg-gradient-to-r from-white/15 to-transparent px-5 py-4 flex items-center gap-3 border-b border-white/15">
+                <span class="text-3xl">📺</span>
+                <div>
+                    <h2 class="text-white font-extrabold text-xl leading-tight">Panel Online</h2>
+                    <p class="text-green-300 text-xs mt-0.5 tracking-wide">Seguí el torneo en tiempo real</p>
+                </div>
             </div>
 
-            <div class="px-3 pt-3 pb-2 grid grid-cols-2 gap-2">
+            <div class="px-4 pt-4 pb-3 grid grid-cols-2 gap-3">
                 <button wire:click="abrirRanking"
-                        class="flex items-center gap-2 bg-yellow-400/20 border border-yellow-300/30
-                               rounded-xl px-3 py-2.5 hover:bg-yellow-400/30 transition text-left w-full">
-                    <span class="text-xl shrink-0">🏆</span>
-                    <div class="min-w-0">
-                        <p class="text-white font-semibold text-xs leading-tight">Ranking General</p>
-                        <p class="text-yellow-200 text-xs leading-tight">Por categoría</p>
+                        class="flex flex-col items-center gap-2 bg-yellow-400/20 border border-yellow-300/40
+                               rounded-xl px-3 py-5 hover:bg-yellow-400/35 transition text-center w-full">
+                    <span class="text-4xl">🏆</span>
+                    <div>
+                        <p class="text-white font-bold text-sm leading-tight">Ranking General</p>
+                        <p class="text-yellow-200 text-xs leading-tight mt-0.5">Posiciones por categoría</p>
                     </div>
                 </button>
                 <button wire:click="abrirTorneos"
-                        class="flex items-center gap-2 bg-white/15 border border-white/20
-                               rounded-xl px-3 py-2.5 hover:bg-white/25 transition text-left w-full">
-                    <span class="text-xl shrink-0">🏅</span>
-                    <div class="min-w-0">
-                        <p class="text-white font-semibold text-xs leading-tight">Torneos finalizados</p>
-                        <p class="text-green-200 text-xs leading-tight">Resultados y draws</p>
+                        class="flex flex-col items-center gap-2 bg-white/15 border border-white/25
+                               rounded-xl px-3 py-5 hover:bg-white/25 transition text-center w-full">
+                    <span class="text-4xl">🏅</span>
+                    <div>
+                        <p class="text-white font-bold text-sm leading-tight">Torneos finalizados</p>
+                        <p class="text-green-200 text-xs leading-tight mt-0.5">Resultados y draws</p>
                     </div>
                 </button>
                 <button wire:click="abrirMisPartidos"
-                        style="grid-column:1/-1; background:rgba(99,179,237,0.15); border:1px solid rgba(144,205,244,0.3); border-radius:0.75rem; padding:10px 12px; text-align:left; width:100%; display:flex; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
-                    <span style="font-size:1.25rem; flex-shrink:0">🎾</span>
+                        style="grid-column:1/-1; background:rgba(99,179,237,0.15); border:1px solid rgba(144,205,244,0.35); border-radius:0.75rem; padding:18px 16px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
+                    <span style="font-size:2.25rem">🎾</span>
                     <div>
-                        <p class="text-white font-semibold text-xs leading-tight">Mis Partidos</p>
-                        <p class="text-green-200 text-xs leading-tight">Buscá tus partidos por año</p>
+                        <p class="text-white font-bold text-sm leading-tight">Mis Partidos</p>
+                        <p style="color:rgba(147,197,253,0.85); font-size:.75rem; margin-top:2px">Buscá tus partidos por año</p>
                     </div>
                 </button>
+                @if($panelInfo)
+                <button wire:click="abrirInfo"
+                        style="grid-column:1/-1; background:rgba(251,191,36,0.12); border:1px solid rgba(252,211,77,0.35); border-radius:0.75rem; padding:18px 16px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
+                    <span style="font-size:2.25rem">ℹ️</span>
+                    <div>
+                        <p class="text-white font-bold text-sm leading-tight">Información</p>
+                        <p style="color:rgba(253,230,138,0.85); font-size:.75rem; margin-top:2px">Novedades y avisos</p>
+                    </div>
+                </button>
+                @endif
             </div>
 
-            <div class="px-3 pb-3 pt-1 space-y-2">
+            <div class="px-4 pb-4 pt-1 space-y-2">
                 @if($torneos->isEmpty())
                     <div class="text-green-200/70 text-xs italic text-center py-3">
                         No hay torneos disponibles por el momento.
                     </div>
                 @else
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="h-px flex-1 bg-white/20"></div>
+                        <span class="text-green-300 text-xs font-semibold uppercase tracking-widest">Torneos activos</span>
+                        <div class="h-px flex-1 bg-white/20"></div>
+                    </div>
                     @foreach($torneos as $torneo)
-                        <div class="border border-red-500 rounded-xl overflow-hidden">
-                            <div class="bg-white/10 px-3 py-2 flex items-center justify-between gap-2">
+                        <div class="border border-white/20 rounded-xl overflow-hidden">
+                            <div class="bg-white/10 px-3 py-2.5 flex items-center justify-between gap-2">
                                 <div class="min-w-0">
-                                    <p class="text-white font-bold text-xs truncate">{{ $torneo->nombre }}</p>
+                                    <p class="text-white font-bold text-sm truncate">{{ $torneo->nombre }}</p>
                                     @if($torneo->fecha_inicio)
                                         <p class="text-green-300 text-xs">
                                             Fecha de inicio: {{ \Carbon\Carbon::parse($torneo->fecha_inicio)->format('d/m/Y') }}
@@ -385,7 +423,7 @@
                                 @if($tieneCampeon)
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">Finalizado</span>
                                 @elseif($torneo->estado === 'activo')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">Torneo en curso</span>
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">En curso</span>
                                 @endif
                             </div>
                             @if(($torneo->tipo ?? 'normal') === 'master')
@@ -433,7 +471,7 @@
                 @endif
             </div>
 
-            <div class="px-3 pt-1 pb-3 border-t border-white/10">
+            <div class="px-4 pt-1 pb-4 border-t border-white/10">
                 <div class="text-center">
                     <a href="{{ route('admin.login') }}" wire:navigate
                        class="text-white/40 hover:text-white/70 text-xs transition">

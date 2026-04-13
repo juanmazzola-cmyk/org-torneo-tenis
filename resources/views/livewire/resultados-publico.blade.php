@@ -1,5 +1,5 @@
 <div wire:poll.20s class="min-h-screen flex flex-col"
-     style="background: linear-gradient(160deg, #166534 0%, #15803d 40%, #16a34a 70%, #22c55e 100%)">
+     style="background: linear-gradient(160deg, #14532d 0%, #166534 45%, #15803d 100%)">
 
     {{-- Header --}}
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">

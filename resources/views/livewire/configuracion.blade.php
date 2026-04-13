@@ -101,6 +101,19 @@
             </div>
         </div>
 
+        <!-- Información pública -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">ℹ️ Texto de Información Pública</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Si completás este campo, aparece una solapa "Información" en el panel público.
+                Podés escribir avisos, horarios, novedades, etc. Si lo dejás vacío, la solapa no se muestra.
+            </p>
+            <textarea wire:model="panel_info" rows="6"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-y"
+                      placeholder="Ej: Próxima fecha: sábado 20/4 desde las 9hs. Cancha 1 y 2. ¡Los esperamos!"></textarea>
+            @error('panel_info') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+        </div>
+
         <button type="submit"
                 class="bg-green-700 text-white px-8 py-3 rounded-lg hover:bg-green-800 transition font-medium">
             Guardar Configuración

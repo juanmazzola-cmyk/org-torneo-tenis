@@ -37,6 +37,11 @@ class Bienvenida extends Component
         $this->busqueda    = '';
     }
 
+    public function abrirInfo(): void
+    {
+        $this->panel = 'info';
+    }
+
     public function abrirIframe(string $url): void
     {
         $this->iframeUrl = $url;
@@ -85,6 +90,7 @@ class Bienvenida extends Component
 
         $clubNombre = Config::get('club_nombre', 'Club de Tenis');
         $clubCiudad = Config::get('club_ciudad', '');
+        $panelInfo  = Config::get('panel_info', '');
 
         $categoriasData = [];
         $categorias     = collect();
@@ -213,7 +219,7 @@ class Bienvenida extends Component
         }
 
         return view('livewire.bienvenida', compact(
-            'torneos', 'clubNombre', 'clubCiudad',
+            'torneos', 'clubNombre', 'clubCiudad', 'panelInfo',
             'categoriasData', 'categorias', 'torneosFinalizados',
             'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio'
         ))->layout('layouts.publica');
