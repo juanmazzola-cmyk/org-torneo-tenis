@@ -330,14 +330,14 @@
     ═══════════════════════════════════════════════════════ --}}
     @else
 
-    <div class="sticky top-0 z-10 flex-shrink-0 bg-black/40 backdrop-blur-md border-b border-white/10">
+    <div class="flex-shrink-0">
         <div class="flex justify-end px-4 pt-3">
             <button onclick="window.close()"
                     class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
                 Salir
             </button>
         </div>
-        <div class="text-center pt-2 pb-4 px-4">
+        <div class="text-center pt-2 pb-5 px-4">
             <div class="text-5xl mb-2">🎾</div>
             <h1 class="text-4xl font-extrabold text-white tracking-tight drop-shadow-xl leading-tight">
                 {{ $clubNombre }}
