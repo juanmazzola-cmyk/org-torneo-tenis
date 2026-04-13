@@ -330,8 +330,7 @@
     ═══════════════════════════════════════════════════════ --}}
     @else
 
-    <div class="sticky top-0 z-10 flex-shrink-0"
-         style="background: linear-gradient(160deg, #14532d 0%, #166534 45%, #15803d 100%)">
+    <div class="sticky top-0 z-10 flex-shrink-0 bg-black/40 backdrop-blur-md border-b border-white/10">
         <div class="flex justify-end px-4 pt-3">
             <button onclick="window.close()"
                     class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
