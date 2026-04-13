@@ -330,22 +330,24 @@
     ═══════════════════════════════════════════════════════ --}}
     @else
 
-    <div class="flex justify-end px-4 pt-3 flex-shrink-0">
-        <button onclick="window.close()"
-                class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
-            Salir
-        </button>
-    </div>
-
-    <div class="text-center pt-5 pb-5 px-4 flex-shrink-0">
-        <div class="text-5xl mb-2">🎾</div>
-        <h1 class="text-4xl font-extrabold text-white tracking-tight drop-shadow-xl leading-tight">
-            {{ $clubNombre }}
-        </h1>
-        @if($clubCiudad)
-            <p class="text-yellow-200 text-base mt-1.5 font-medium">{{ $clubCiudad }}</p>
-        @endif
-        <p class="text-green-300 text-sm mt-1 tracking-widest uppercase font-semibold">Gestión de torneos</p>
+    <div class="sticky top-0 z-10 flex-shrink-0"
+         style="background: linear-gradient(160deg, #14532d 0%, #166534 45%, #15803d 100%)">
+        <div class="flex justify-end px-4 pt-3">
+            <button onclick="window.close()"
+                    class="bg-white text-green-900 font-semibold text-sm px-4 py-1.5 rounded-lg shadow hover:bg-green-50 transition">
+                Salir
+            </button>
+        </div>
+        <div class="text-center pt-2 pb-4 px-4">
+            <div class="text-5xl mb-2">🎾</div>
+            <h1 class="text-4xl font-extrabold text-white tracking-tight drop-shadow-xl leading-tight">
+                {{ $clubNombre }}
+            </h1>
+            @if($clubCiudad)
+                <p class="text-yellow-200 text-base mt-1.5 font-medium">{{ $clubCiudad }}</p>
+            @endif
+            <p class="text-green-300 text-sm mt-1 tracking-widest uppercase font-semibold">Gestión de torneos</p>
+        </div>
     </div>
 
     <div class="max-w-2xl mx-auto w-full px-3 pb-8">
