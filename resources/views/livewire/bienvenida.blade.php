@@ -275,7 +275,7 @@
                                     <p class="text-yellow-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
                                 </div>
                                 <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0
-                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-600/40 text-red-400' }}">
+                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300' }}">
                                     {{ $partido['gano'] ? 'Ganó' : 'Perdió' }}
                                 </span>
                             </div>
@@ -318,7 +318,7 @@
 
         <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
             <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 shadow-xl">
-                <div class="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
+                <div class="text-yellow-200 text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
             </div>
         </div>
     </div>
