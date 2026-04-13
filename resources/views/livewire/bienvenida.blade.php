@@ -8,14 +8,10 @@
     ═══════════════════════════════════════════════════════ --}}
     @if($iframeUrl)
     <div wire:key="iframe-{{ md5($iframeUrl) }}" class="fixed inset-0 z-50 flex flex-col bg-green-950">
-        <div class="flex items-center justify-between px-4 py-2.5 bg-green-900/95 border-b border-green-700/50 shrink-0">
+        <div class="flex items-center px-4 py-2.5 bg-green-900/95 border-b border-green-700/50 shrink-0">
             <button wire:click="cerrarIframe"
                     class="text-green-400 hover:text-white transition text-sm font-semibold">
                 ← Volver
-            </button>
-            <button onclick="window.close()"
-                    class="bg-white text-green-900 font-semibold text-xs px-3 py-1.5 rounded-lg shadow">
-                Salir
             </button>
         </div>
         <iframe src="{{ $iframeUrl }}"
@@ -271,7 +267,7 @@
                                     {{ $partido['gano'] ? 'border-green-400/40' : 'border-red-400/20' }}">
                             <div class="flex items-start justify-between gap-2 mb-1">
                                 <div class="min-w-0">
-                                    <p class="text-white/80 text-xs font-semibold truncate">{{ $partido['torneo'] }}</p>
+                                    <p class="text-white text-xs font-semibold truncate">{{ $partido['torneo'] }}</p>
                                     <p class="text-yellow-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
                                 </div>
                                 <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0
