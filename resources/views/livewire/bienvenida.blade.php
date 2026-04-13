@@ -270,10 +270,16 @@
                                     <p class="text-white text-xs font-semibold truncate">{{ $partido['torneo'] }}</p>
                                     <p class="text-yellow-300 text-xs">Cat. {{ $partido['categoria'] }} — {{ $partido['ronda'] }}</p>
                                 </div>
-                                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0
-                                             {{ $partido['gano'] ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300' }}">
-                                    {{ $partido['gano'] ? 'Ganó' : 'Perdió' }}
+                                @if($partido['gano'])
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0 bg-green-500/30 text-green-300">
+                                    Ganó
                                 </span>
+                                @else
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
+                                      style="background:rgba(220,38,38,0.35); color:#fca5a5">
+                                    Perdió
+                                </span>
+                                @endif
                             </div>
                             <div class="flex items-center justify-between gap-2">
                                 <p class="text-white/60 text-sm">
