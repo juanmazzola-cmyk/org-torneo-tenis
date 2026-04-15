@@ -131,12 +131,21 @@ class MasterDetalle extends Component
         $this->resultado      = $partido->resultado ?? '';
         $this->ganadorId      = (string) ($partido->ganador_id ?? '');
         $this->parsearSets($this->resultado);
+        // Si el ganador era jugador2, los sets almacenados están con el ganador primero;
+        // invertimos los campos para que cada columna muestre los games reales del jugador.
+        if ($partido->ganador_id && (string)$partido->jugador2_id === (string)$partido->ganador_id) {
+            [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
+            [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
+            [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+        }
         $this->modalResultado = true;
     }
 
     public function guardarResultado(): void
     {
-        $this->resultado = $this->buildResultado();
+        $partido    = MasterPartido::findOrFail($this->partidoId);
+        $flipSets   = (string)$partido->jugador2_id === (string)$this->ganadorId;
+        $this->resultado = $this->buildResultado($flipSets);
 
         $this->validate([
             'resultado' => 'required|string|max:50',
@@ -146,7 +155,6 @@ class MasterDetalle extends Component
             'ganadorId.required' => 'Seleccioná el ganador.',
         ]);
 
-        $partido     = MasterPartido::findOrFail($this->partidoId);
         $esJornada1  = $partido->jornada === 1;
 
         if ($esJornada1 && $partido->ganador_id) {
@@ -250,12 +258,19 @@ class MasterDetalle extends Component
         $this->resultado           = $final->resultado ?? '';
         $this->ganadorId           = (string) ($final->ganador_id ?? '');
         $this->parsearSets($this->resultado);
+        if ($final->ganador_id && (string)$final->jugador2_id === (string)$final->ganador_id) {
+            [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
+            [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
+            [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+        }
         $this->modalResultadoFinal = true;
     }
 
     public function guardarResultadoFinal(): void
     {
-        $this->resultado = $this->buildResultado();
+        $final    = MasterFinal::findOrFail($this->finalId);
+        $flipSets = (string)$final->jugador2_id === (string)$this->ganadorId;
+        $this->resultado = $this->buildResultado($flipSets);
 
         $this->validate([
             'resultado' => 'required|string|max:50',
@@ -264,8 +279,6 @@ class MasterDetalle extends Component
             'resultado.required' => 'Ingresá al menos el Set 1.',
             'ganadorId.required' => 'Seleccioná el ganador.',
         ]);
-
-        $final = MasterFinal::findOrFail($this->finalId);
 
         // Si se edita una semi y ya había final con resultado, limpiar final
         if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
@@ -279,12 +292,13 @@ class MasterDetalle extends Component
             'ganador_id' => $this->ganadorId,
         ]);
 
-        // Si era una semi, intentar armar la final
+        // Si era una semi, intentar armar la final y actualizar ranking parcial
         if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
             $this->actualizarFinal();
+            $this->recalcularRankingMaster();
         }
 
-        // Si era la final, guardar ranking
+        // Si era la final, guardar ranking y marcar como finalizado
         if ($final->tipo === 'final') {
             $this->recalcularRankingMaster();
             $this->master->update(['estado' => 'finalizado']);
@@ -443,12 +457,18 @@ class MasterDetalle extends Component
         }
     }
 
-    private function buildResultado(): string
+    private function buildResultado(bool $flipSets = false): string
     {
         $sets = [];
-        if ($this->s1j1 !== '' && $this->s1j2 !== '') $sets[] = "{$this->s1j1}-{$this->s1j2}";
-        if ($this->s2j1 !== '' && $this->s2j2 !== '') $sets[] = "{$this->s2j1}-{$this->s2j2}";
-        if ($this->s3j1 !== '' && $this->s3j2 !== '') $sets[] = "{$this->s3j1}-{$this->s3j2}";
+        if ($this->s1j1 !== '' && $this->s1j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s1j2}-{$this->s1j1}" : "{$this->s1j1}-{$this->s1j2}";
+        }
+        if ($this->s2j1 !== '' && $this->s2j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s2j2}-{$this->s2j1}" : "{$this->s2j1}-{$this->s2j2}";
+        }
+        if ($this->s3j1 !== '' && $this->s3j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s3j2}-{$this->s3j1}" : "{$this->s3j1}-{$this->s3j2}";
+        }
         return implode(' ', $sets);
     }
 
