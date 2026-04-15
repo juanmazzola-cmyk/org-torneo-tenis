@@ -319,12 +319,22 @@
                         @error('ganadorId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Victoria por W.O.</label>
+                        <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50
+                                      {{ $esWO ? 'border-orange-400 bg-orange-50' : 'border-gray-200' }}">
+                            <input type="checkbox" wire:model.live="esWO" class="rounded text-orange-500">
+                            <span class="font-medium text-gray-700">W.O. <span class="text-xs text-gray-500">(rival no se presentó)</span></span>
+                        </label>
+                    </div>
+                    @if(!$esWO)
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Resultado (opcional)</label>
                         @include('partials.set-inputs', [
                             'j1nombre' => $partido?->jugador1?->apellido ?? 'J1',
                             'j2nombre' => $partido?->jugador2?->apellido ?? 'J2',
                         ])
                     </div>
+                    @endif
                     <div class="flex gap-3 justify-end pt-2">
                         <button type="button" wire:click="cancelarResultado"
                                 class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">Cancelar</button>

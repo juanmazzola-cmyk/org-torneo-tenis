@@ -13,7 +13,7 @@ class RankingService
      * Calcula el ranking con los 5 criterios de desempate.
      * Retorna array de bloques por categoría con jugadores ordenados.
      */
-    public static function calcular(?int $filtroCategoria = null, ?int $filtroTorneo = null): array
+    public static function calcular(?int $filtroCategoria = null, ?int $filtroTorneo = null, ?int $filtroAnio = null): array
     {
         $categorias = Categoria::orderBy('nombre')
             ->when($filtroCategoria, fn($q) => $q->where('id', $filtroCategoria))
@@ -27,6 +27,9 @@ class RankingService
         $todosRankings = Ranking::with(['jugador', 'torneo'])
             ->whereIn('categoria_id', $categoriaIds)
             ->when($filtroTorneo, fn($q) => $q->where('torneo_id', $filtroTorneo))
+            ->when($filtroAnio, fn($q) => $q->whereHas('torneo', fn($q2) =>
+                $q2->whereYear('fecha_inicio', $filtroAnio)
+            ))
             ->get();
 
         $result = [];

@@ -16,6 +16,7 @@ class Bienvenida extends Component
 {
     public string $panel = '';           // '' | 'ranking' | 'torneos' | 'misPartidos'
     public string $filtroCategoria = '';
+    public string $filtroAnio      = '';
     public string $iframeUrl = '';       // URL cargada en el iframe overlay
     public string $busqueda = '';        // búsqueda de jugador en "Mis Partidos"
     public ?int   $jugadorId = null;     // jugador seleccionado en "Mis Partidos"
@@ -54,11 +55,12 @@ class Bienvenida extends Component
 
     public function cerrar(): void
     {
-        $this->panel         = '';
-        $this->iframeUrl     = '';
+        $this->panel           = '';
+        $this->iframeUrl       = '';
         $this->filtroCategoria = '';
-        $this->jugadorId     = null;
-        $this->busqueda      = '';
+        $this->filtroAnio      = '';
+        $this->jugadorId       = null;
+        $this->busqueda        = '';
     }
 
     public function seleccionarJugador(int $id): void
@@ -97,7 +99,9 @@ class Bienvenida extends Component
 
         if ($this->panel === 'ranking') {
             $categoriasData = RankingService::calcular(
-                $this->filtroCategoria ? (int) $this->filtroCategoria : null
+                $this->filtroCategoria ? (int) $this->filtroCategoria : null,
+                null,
+                $this->filtroAnio ? (int) $this->filtroAnio : null
             );
             $categorias = Categoria::orderBy('nombre')->get();
         }
@@ -218,10 +222,15 @@ class Bienvenida extends Component
             }
         }
 
+        $anos = Torneo::whereNotNull('fecha_inicio')
+            ->get()
+            ->map(fn($t) => \Carbon\Carbon::parse($t->fecha_inicio)->year)
+            ->unique()->sortDesc()->values();
+
         return view('livewire.bienvenida', compact(
             'torneos', 'clubNombre', 'clubCiudad', 'panelInfo',
             'categoriasData', 'categorias', 'torneosFinalizados',
-            'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio'
+            'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio', 'anos'
         ))->layout('layouts.publica');
     }
 }

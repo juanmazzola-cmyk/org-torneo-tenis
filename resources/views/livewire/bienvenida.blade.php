@@ -33,14 +33,24 @@
                     <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
                     <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
                 </div>
-                <select wire:model.live="filtroCategoria"
-                        class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
-                               focus:outline-none focus:ring-2 focus:ring-green-400">
-                    <option value="">Todas las categorías</option>
-                    @foreach($categorias as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
-                    @endforeach
-                </select>
+                <div class="flex items-center gap-2">
+                    <select wire:model.live="filtroAnio"
+                            class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
+                                   focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <option value="">Todos los años</option>
+                        @foreach($anos as $anio)
+                            <option value="{{ $anio }}">{{ $anio }}</option>
+                        @endforeach
+                    </select>
+                    <select wire:model.live="filtroCategoria"
+                            class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
+                                   focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <option value="">Todas las categorías</option>
+                        @foreach($categorias as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -384,7 +394,7 @@
                     <span style="font-size:2.25rem">🎾</span>
                     <div>
                         <p class="text-white font-bold text-sm leading-tight">Mis Partidos</p>
-                        <p style="color:rgba(147,197,253,0.85); font-size:.75rem; margin-top:2px">Buscá tus partidos por año</p>
+                        <p style="color:rgba(147,197,253,0.85); font-size:.75rem; margin-top:2px">Seguí tu estadística personal</p>
                     </div>
                 </button>
                 @if($panelInfo)

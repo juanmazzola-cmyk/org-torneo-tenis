@@ -13,6 +13,13 @@
 
     <!-- Filtros -->
     <div class="bg-white rounded-xl shadow p-4 mb-6 flex flex-col sm:flex-row gap-3">
+        <select wire:model.live="filtroAnio"
+                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+            <option value="">Todos los años</option>
+            @foreach($anos as $anio)
+                <option value="{{ $anio }}">{{ $anio }}</option>
+            @endforeach
+        </select>
         <select wire:model.live="filtroTorneo"
                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
             <option value="">Todos los torneos</option>

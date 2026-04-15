@@ -12,7 +12,11 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class RankingExport implements FromQuery, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
-    public function __construct(private ?int $torneoId = null, private ?int $categoriaId = null) {}
+    public function __construct(
+        private ?int $torneoId    = null,
+        private ?int $categoriaId = null,
+        private ?int $anio        = null,
+    ) {}
 
     public function query()
     {
@@ -25,6 +29,9 @@ class RankingExport implements FromQuery, WithHeadings, WithMapping, WithStyles,
         }
         if ($this->categoriaId) {
             $query->where('categoria_id', $this->categoriaId);
+        }
+        if ($this->anio) {
+            $query->whereHas('torneo', fn($q) => $q->whereYear('fecha_inicio', $this->anio));
         }
 
         return $query;

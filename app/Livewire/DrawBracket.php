@@ -19,6 +19,7 @@ class DrawBracket extends Component
     public ?int $partidoId = null;
     public string $ganadorId = '';
     public string $resultado = '';
+    public bool $esWO = false;
 
     // Sets individuales
     public string $s1j1 = '', $s1j2 = '';
@@ -41,20 +42,33 @@ class DrawBracket extends Component
         $partido = Partido::findOrFail($partidoId);
         $this->partidoId = $partidoId;
         $this->ganadorId = (string) ($partido->ganador_id ?? '');
-        $this->resultado = $partido->resultado ?? '';
-        $this->parsearSets($this->resultado);
+        $this->esWO      = $partido->resultado === 'W.O.';
+
+        if (!$this->esWO) {
+            $this->resultado = $partido->resultado ?? '';
+            $this->parsearSets($this->resultado);
+            // Si el ganador era jugador2, los sets almacenados están con el ganador primero,
+            // entonces invertimos los campos para que cada columna muestre los games reales del jugador.
+            if ($partido->ganador_id && (string)$partido->jugador2_id === (string)$partido->ganador_id) {
+                [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
+                [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
+                [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+            }
+        } else {
+            $this->resultado = '';
+        }
     }
 
     public function guardarResultado(): void
     {
-        $this->resultado = $this->buildResultado();
+        $partido  = Partido::findOrFail($this->partidoId);
+        $flipSets = !$this->esWO && (string)$partido->jugador2_id === (string)$this->ganadorId;
+        $this->resultado = $this->buildResultado($flipSets);
 
         $this->validate([
             'ganadorId' => 'required|exists:jugadores,id',
             'resultado' => 'nullable|max:100',
         ]);
-
-        $partido = Partido::findOrFail($this->partidoId);
 
         // Si ya tenía resultado anterior, limpiar estado previo
         if ($partido->ganador_id) {
@@ -92,7 +106,7 @@ class DrawBracket extends Component
         }
 
         session()->flash('ok', 'Resultado cargado.');
-        $this->reset(['partidoId', 'ganadorId', 'resultado']);
+        $this->reset(['partidoId', 'ganadorId', 'resultado', 'esWO']);
     }
 
     /**
@@ -217,7 +231,7 @@ class DrawBracket extends Component
 
     public function cancelarResultado(): void
     {
-        $this->reset(['partidoId', 'ganadorId', 'resultado',
+        $this->reset(['partidoId', 'ganadorId', 'resultado', 'esWO',
             's1j1', 's1j2', 's2j1', 's2j2', 's3j1', 's3j2']);
     }
 
@@ -387,12 +401,19 @@ class DrawBracket extends Component
         }
     }
 
-    private function buildResultado(): string
+    private function buildResultado(bool $flipSets = false): string
     {
+        if ($this->esWO) return 'W.O.';
         $sets = [];
-        if ($this->s1j1 !== '' && $this->s1j2 !== '') $sets[] = "{$this->s1j1}-{$this->s1j2}";
-        if ($this->s2j1 !== '' && $this->s2j2 !== '') $sets[] = "{$this->s2j1}-{$this->s2j2}";
-        if ($this->s3j1 !== '' && $this->s3j2 !== '') $sets[] = "{$this->s3j1}-{$this->s3j2}";
+        if ($this->s1j1 !== '' && $this->s1j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s1j2}-{$this->s1j1}" : "{$this->s1j1}-{$this->s1j2}";
+        }
+        if ($this->s2j1 !== '' && $this->s2j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s2j2}-{$this->s2j1}" : "{$this->s2j1}-{$this->s2j2}";
+        }
+        if ($this->s3j1 !== '' && $this->s3j2 !== '') {
+            $sets[] = $flipSets ? "{$this->s3j2}-{$this->s3j1}" : "{$this->s3j1}-{$this->s3j2}";
+        }
         return implode(' ', $sets);
     }
 
