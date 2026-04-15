@@ -23,12 +23,14 @@ class Bienvenida extends Component
 
     public function abrirRanking(): void
     {
-        $this->panel = 'ranking';
+        $this->panel      = 'ranking';
+        $this->filtroAnio = (string) now()->year;
     }
 
     public function abrirTorneos(): void
     {
-        $this->panel = 'torneos';
+        $this->panel      = 'torneos';
+        $this->filtroAnio = (string) now()->year;
     }
 
     public function abrirMisPartidos(): void
@@ -113,6 +115,7 @@ class Bienvenida extends Component
                 'draws.partidos' => fn($q) => $q->where('ronda', 1)->whereNotNull('ganador_id'),
                 'masters.categoria',
             ])
+            ->when($this->filtroAnio, fn($q) => $q->whereYear('fecha_inicio', $this->filtroAnio))
             ->orderBy('fecha_inicio', 'desc')
             ->get()
             ->filter(fn($t) =>

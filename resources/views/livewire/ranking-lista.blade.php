@@ -11,15 +11,28 @@
         </button>
     </div>
 
+    <!-- Solapas de año -->
+    <div class="flex items-center gap-2 mb-4 flex-wrap">
+        @foreach($anos as $anio)
+        <button wire:click="$set('filtroAnio', '{{ $anio }}')"
+                class="px-4 py-1.5 rounded-full text-sm font-semibold border transition
+                       {{ (string)$filtroAnio === (string)$anio
+                           ? 'bg-green-700 text-white border-green-700'
+                           : 'bg-white text-gray-600 border-gray-300 hover:border-green-500 hover:text-green-700' }}">
+            {{ $anio }}
+        </button>
+        @endforeach
+        <button wire:click="$set('filtroAnio', '')"
+                class="px-4 py-1.5 rounded-full text-sm font-semibold border transition
+                       {{ $filtroAnio === ''
+                           ? 'bg-green-700 text-white border-green-700'
+                           : 'bg-white text-gray-600 border-gray-300 hover:border-green-500 hover:text-green-700' }}">
+            Todos los años
+        </button>
+    </div>
+
     <!-- Filtros -->
     <div class="bg-white rounded-xl shadow p-4 mb-6 flex flex-col sm:flex-row gap-3">
-        <select wire:model.live="filtroAnio"
-                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-            <option value="">Todos los años</option>
-            @foreach($anos as $anio)
-                <option value="{{ $anio }}">{{ $anio }}</option>
-            @endforeach
-        </select>
         <select wire:model.live="filtroTorneo"
                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
             <option value="">Todos los torneos</option>

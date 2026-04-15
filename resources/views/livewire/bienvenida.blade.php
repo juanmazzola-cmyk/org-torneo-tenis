@@ -28,20 +28,13 @@
 
     <div class="flex flex-col min-h-screen">
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
-            <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                    <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
-                </div>
-                <div class="flex items-center gap-2">
-                    <select wire:model.live="filtroAnio"
-                            class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
-                                   focus:outline-none focus:ring-2 focus:ring-green-400">
-                        <option value="">Todos los años</option>
-                        @foreach($anos as $anio)
-                            <option value="{{ $anio }}">{{ $anio }}</option>
-                        @endforeach
-                    </select>
+            <div class="max-w-5xl mx-auto px-4 py-3 space-y-2">
+                {{-- Fila 1: título + categoría --}}
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                        <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
+                    </div>
                     <select wire:model.live="filtroCategoria"
                             class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
                                    focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -50,6 +43,25 @@
                             <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
                         @endforeach
                     </select>
+                </div>
+                {{-- Fila 2: solapas de año --}}
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    @foreach($anos as $anio)
+                    <button wire:click="$set('filtroAnio', '{{ $anio }}')"
+                            class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                                   {{ (string)$filtroAnio === (string)$anio
+                                       ? 'bg-white text-green-900'
+                                       : 'bg-white/15 text-white hover:bg-white/25' }}">
+                        {{ $anio }}
+                    </button>
+                    @endforeach
+                    <button wire:click="$set('filtroAnio', '')"
+                            class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                                   {{ $filtroAnio === ''
+                                       ? 'bg-white text-green-900'
+                                       : 'bg-white/15 text-white hover:bg-white/25' }}">
+                        Todos
+                    </button>
                 </div>
             </div>
         </div>
@@ -132,9 +144,31 @@
 
     <div class="flex flex-col min-h-screen">
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
-            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-                <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
+            <div class="max-w-2xl mx-auto px-4 py-3 space-y-2">
+                {{-- Fila 1: título --}}
+                <div class="flex items-center gap-3">
+                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                    <h1 class="text-white font-bold text-lg">🏅 Torneos finalizados</h1>
+                </div>
+                {{-- Fila 2: solapas de año --}}
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    @foreach($anos as $anio)
+                    <button wire:click="$set('filtroAnio', '{{ $anio }}')"
+                            class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                                   {{ (string)$filtroAnio === (string)$anio
+                                       ? 'bg-white text-green-900'
+                                       : 'bg-white/15 text-white hover:bg-white/25' }}">
+                        {{ $anio }}
+                    </button>
+                    @endforeach
+                    <button wire:click="$set('filtroAnio', '')"
+                            class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                                   {{ $filtroAnio === ''
+                                       ? 'bg-white text-green-900'
+                                       : 'bg-white/15 text-white hover:bg-white/25' }}">
+                        Todos
+                    </button>
+                </div>
             </div>
         </div>
 

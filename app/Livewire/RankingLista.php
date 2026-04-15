@@ -15,6 +15,11 @@ class RankingLista extends Component
     public string $filtroCategoria = '';
     public string $filtroAnio      = '';
 
+    public function mount(): void
+    {
+        $this->filtroAnio = (string) now()->year;
+    }
+
     public function exportar()
     {
         return Excel::download(

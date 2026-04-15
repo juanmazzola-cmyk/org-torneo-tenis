@@ -9,11 +9,18 @@
             </h1>
             <p class="text-sm text-gray-500">Draw de {{ $draw->tamano }} jugadores</p>
         </div>
-        <a href="{{ route('torneo.draw.imprimir', [$torneo->id, $draw->id]) }}"
-           target="_blank"
-           class="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-medium">
-            🖨️ Imprimir
-        </a>
+        <div class="flex items-center gap-2">
+            <button wire:click="recalcularRanking"
+                    wire:confirm="¿Recalcular ranking de este draw? Se reconstruye desde cero con los resultados actuales."
+                    class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                🔄 Recalcular ranking
+            </button>
+            <a href="{{ route('torneo.draw.imprimir', [$torneo->id, $draw->id]) }}"
+               target="_blank"
+               class="flex items-center gap-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-medium">
+                🖨️ Imprimir
+            </a>
+        </div>
     </div>
 
     @if(session('ok'))
