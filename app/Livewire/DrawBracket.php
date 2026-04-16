@@ -19,7 +19,8 @@ class DrawBracket extends Component
     public ?int $partidoId = null;
     public string $ganadorId = '';
     public string $resultado = '';
-    public bool $esWO = false;
+    public bool $esWO     = false;
+    public bool $esRetiro = false;
 
     // Sets individuales
     public string $s1j1 = '', $s1j2 = '';
@@ -43,10 +44,12 @@ class DrawBracket extends Component
         $this->partidoId = $partidoId;
         $this->ganadorId = (string) ($partido->ganador_id ?? '');
         $this->esWO      = $partido->resultado === 'W.O.';
+        $this->esRetiro  = !$this->esWO && str_ends_with(trim($partido->resultado ?? ''), 'ret.');
 
         if (!$this->esWO) {
-            $this->resultado = $partido->resultado ?? '';
-            $this->parsearSets($this->resultado);
+            $raw = preg_replace('/\s*ret\.\s*$/i', '', $partido->resultado ?? '');
+            $this->resultado = $raw;
+            $this->parsearSets($raw);
             // Si el ganador era jugador2, los sets almacenados están con el ganador primero,
             // entonces invertimos los campos para que cada columna muestre los games reales del jugador.
             if ($partido->ganador_id && (string)$partido->jugador2_id === (string)$partido->ganador_id) {
@@ -231,7 +234,7 @@ class DrawBracket extends Component
 
     public function cancelarResultado(): void
     {
-        $this->reset(['partidoId', 'ganadorId', 'resultado', 'esWO',
+        $this->reset(['partidoId', 'ganadorId', 'resultado', 'esWO', 'esRetiro',
             's1j1', 's1j2', 's2j1', 's2j2', 's3j1', 's3j2']);
     }
 
@@ -414,7 +417,11 @@ class DrawBracket extends Component
         if ($this->s3j1 !== '' && $this->s3j2 !== '') {
             $sets[] = $flipSets ? "{$this->s3j2}-{$this->s3j1}" : "{$this->s3j1}-{$this->s3j2}";
         }
-        return implode(' ', $sets);
+        $result = implode(' ', $sets);
+        if ($this->esRetiro) {
+            return $result !== '' ? $result . ' ret.' : 'ret.';
+        }
+        return $result;
     }
 
     public function render()

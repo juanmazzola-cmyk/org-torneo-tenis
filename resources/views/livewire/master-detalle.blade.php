@@ -342,13 +342,38 @@
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Resultado *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de victoria</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50
+                                      {{ $esWO ? 'border-orange-400 bg-orange-50' : 'border-gray-200' }}">
+                            <input type="checkbox" wire:model.live="esWO" class="rounded text-orange-500">
+                            <div>
+                                <span class="font-medium text-gray-700 text-sm">W.O.</span>
+                                <span class="block text-xs text-gray-400">No se presentó</span>
+                            </div>
+                        </label>
+                        <label class="flex-1 flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50
+                                      {{ $esRetiro ? 'border-blue-400 bg-blue-50' : 'border-gray-200' }}">
+                            <input type="checkbox" wire:model.live="esRetiro" class="rounded text-blue-500">
+                            <div>
+                                <span class="font-medium text-gray-700 text-sm">Ret.</span>
+                                <span class="block text-xs text-gray-400">Se retiró</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                @if(!$esWO)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Resultado {{ $esRetiro ? '(opcional)' : '*' }}
+                    </label>
                     @include('partials.set-inputs', [
                         'j1nombre' => $partidoActivo->jugador1->apellido,
                         'j2nombre' => $partidoActivo->jugador2->apellido,
                     ])
                     @error('resultado') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
+                @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Ganador *</label>
                     <select wire:model="ganadorId"
@@ -386,13 +411,38 @@
             </p>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Resultado *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de victoria</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50
+                                      {{ $esWO ? 'border-orange-400 bg-orange-50' : 'border-gray-200' }}">
+                            <input type="checkbox" wire:model.live="esWO" class="rounded text-orange-500">
+                            <div>
+                                <span class="font-medium text-gray-700 text-sm">W.O.</span>
+                                <span class="block text-xs text-gray-400">No se presentó</span>
+                            </div>
+                        </label>
+                        <label class="flex-1 flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50
+                                      {{ $esRetiro ? 'border-blue-400 bg-blue-50' : 'border-gray-200' }}">
+                            <input type="checkbox" wire:model.live="esRetiro" class="rounded text-blue-500">
+                            <div>
+                                <span class="font-medium text-gray-700 text-sm">Ret.</span>
+                                <span class="block text-xs text-gray-400">Se retiró</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                @if(!$esWO)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Resultado {{ $esRetiro ? '(opcional)' : '*' }}
+                    </label>
                     @include('partials.set-inputs', [
                         'j1nombre' => $finalActiva->jugador1->apellido,
                         'j2nombre' => $finalActiva->jugador2->apellido,
                     ])
                     @error('resultado') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
+                @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Ganador *</label>
                     <select wire:model="ganadorId"

@@ -28,6 +28,8 @@ class MasterDetalle extends Component
     public ?int   $partidoId      = null;
     public string $resultado      = '';
     public string $ganadorId      = '';
+    public bool   $esWO           = false;
+    public bool   $esRetiro       = false;
 
     // Modal resultado fase final
     public bool   $modalResultadoFinal = false;
@@ -127,16 +129,24 @@ class MasterDetalle extends Component
     public function abrirResultado(int $partidoId): void
     {
         $partido = MasterPartido::findOrFail($partidoId);
-        $this->partidoId      = $partidoId;
-        $this->resultado      = $partido->resultado ?? '';
-        $this->ganadorId      = (string) ($partido->ganador_id ?? '');
-        $this->parsearSets($this->resultado);
-        // Si el ganador era jugador2, los sets almacenados están con el ganador primero;
-        // invertimos los campos para que cada columna muestre los games reales del jugador.
-        if ($partido->ganador_id && (string)$partido->jugador2_id === (string)$partido->ganador_id) {
-            [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
-            [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
-            [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+        $this->partidoId = $partidoId;
+        $this->ganadorId = (string) ($partido->ganador_id ?? '');
+        $this->esWO      = $partido->resultado === 'W.O.';
+        $this->esRetiro  = !$this->esWO && str_ends_with(trim($partido->resultado ?? ''), 'ret.');
+
+        if (!$this->esWO) {
+            $raw = preg_replace('/\s*ret\.\s*$/i', '', $partido->resultado ?? '');
+            $this->resultado = $raw;
+            $this->parsearSets($raw);
+            // Si el ganador era jugador2, los sets almacenados están con el ganador primero;
+            // invertimos los campos para que cada columna muestre los games reales del jugador.
+            if ($partido->ganador_id && (string)$partido->jugador2_id === (string)$partido->ganador_id) {
+                [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
+                [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
+                [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+            }
+        } else {
+            $this->resultado = '';
         }
         $this->modalResultado = true;
     }
@@ -144,7 +154,7 @@ class MasterDetalle extends Component
     public function guardarResultado(): void
     {
         $partido    = MasterPartido::findOrFail($this->partidoId);
-        $flipSets   = (string)$partido->jugador2_id === (string)$this->ganadorId;
+        $flipSets   = !$this->esWO && (string)$partido->jugador2_id === (string)$this->ganadorId;
         $this->resultado = $this->buildResultado($flipSets);
 
         $this->validate([
@@ -254,14 +264,22 @@ class MasterDetalle extends Component
     public function abrirResultadoFinal(int $finalId): void
     {
         $final = MasterFinal::findOrFail($finalId);
-        $this->finalId             = $finalId;
-        $this->resultado           = $final->resultado ?? '';
-        $this->ganadorId           = (string) ($final->ganador_id ?? '');
-        $this->parsearSets($this->resultado);
-        if ($final->ganador_id && (string)$final->jugador2_id === (string)$final->ganador_id) {
-            [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
-            [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
-            [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+        $this->finalId   = $finalId;
+        $this->ganadorId = (string) ($final->ganador_id ?? '');
+        $this->esWO      = $final->resultado === 'W.O.';
+        $this->esRetiro  = !$this->esWO && str_ends_with(trim($final->resultado ?? ''), 'ret.');
+
+        if (!$this->esWO) {
+            $raw = preg_replace('/\s*ret\.\s*$/i', '', $final->resultado ?? '');
+            $this->resultado = $raw;
+            $this->parsearSets($raw);
+            if ($final->ganador_id && (string)$final->jugador2_id === (string)$final->ganador_id) {
+                [$this->s1j1, $this->s1j2] = [$this->s1j2, $this->s1j1];
+                [$this->s2j1, $this->s2j2] = [$this->s2j2, $this->s2j1];
+                [$this->s3j1, $this->s3j2] = [$this->s3j2, $this->s3j1];
+            }
+        } else {
+            $this->resultado = '';
         }
         $this->modalResultadoFinal = true;
     }
@@ -269,7 +287,7 @@ class MasterDetalle extends Component
     public function guardarResultadoFinal(): void
     {
         $final    = MasterFinal::findOrFail($this->finalId);
-        $flipSets = (string)$final->jugador2_id === (string)$this->ganadorId;
+        $flipSets = !$this->esWO && (string)$final->jugador2_id === (string)$this->ganadorId;
         $this->resultado = $this->buildResultado($flipSets);
 
         $this->validate([
@@ -427,6 +445,8 @@ class MasterDetalle extends Component
         $this->partidoId      = null;
         $this->resultado      = '';
         $this->ganadorId      = '';
+        $this->esWO           = false;
+        $this->esRetiro       = false;
         $this->resetSets();
     }
 
@@ -436,6 +456,8 @@ class MasterDetalle extends Component
         $this->finalId             = null;
         $this->resultado           = '';
         $this->ganadorId           = '';
+        $this->esWO                = false;
+        $this->esRetiro            = false;
         $this->resetSets();
     }
 
@@ -459,6 +481,7 @@ class MasterDetalle extends Component
 
     private function buildResultado(bool $flipSets = false): string
     {
+        if ($this->esWO) return 'W.O.';
         $sets = [];
         if ($this->s1j1 !== '' && $this->s1j2 !== '') {
             $sets[] = $flipSets ? "{$this->s1j2}-{$this->s1j1}" : "{$this->s1j1}-{$this->s1j2}";
@@ -469,7 +492,11 @@ class MasterDetalle extends Component
         if ($this->s3j1 !== '' && $this->s3j2 !== '') {
             $sets[] = $flipSets ? "{$this->s3j2}-{$this->s3j1}" : "{$this->s3j1}-{$this->s3j2}";
         }
-        return implode(' ', $sets);
+        $result = implode(' ', $sets);
+        if ($this->esRetiro) {
+            return $result !== '' ? $result . ' ret.' : 'ret.';
+        }
+        return $result;
     }
 
     private function resetSets(): void
