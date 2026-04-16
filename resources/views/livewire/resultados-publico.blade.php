@@ -5,10 +5,10 @@
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-3xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
-                <button onclick="history.back()"
-                        class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
+                <a href="{{ request()->query('de') !== null ? '/?panel='.request()->query('de') : '/' }}" wire:navigate.replace
+                   class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
                     ← Volver
-                </button>
+                </a>
                 <div class="min-w-0">
                     <h1 class="text-white font-bold text-base md:text-lg truncate">
                         🎾 {{ $torneo->nombre }}
@@ -19,7 +19,7 @@
                 </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
+                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de={{ request()->query('de','') }}" wire:navigate.replace
                    class="text-green-300 hover:text-white text-xs transition underline underline-offset-2">
                     Ver Draw →
                 </a>
