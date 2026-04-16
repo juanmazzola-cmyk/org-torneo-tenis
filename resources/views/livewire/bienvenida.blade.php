@@ -427,6 +427,80 @@
                 </div>
             </div>
 
+            @if($torneos->isNotEmpty())
+            <div class="px-4 pt-4 pb-3 space-y-2">
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="h-px flex-1 bg-white/20"></div>
+                    <span class="text-green-300 text-xs font-semibold uppercase tracking-widest">Torneos activos</span>
+                    <div class="h-px flex-1 bg-white/20"></div>
+                </div>
+                @foreach($torneos as $torneo)
+                    <div class="border border-white/20 rounded-xl overflow-hidden">
+                        <div class="bg-white/10 px-3 py-2.5 flex items-center justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-white font-bold text-sm truncate">{{ $torneo->nombre }}</p>
+                                @if($torneo->fecha_inicio)
+                                    <p class="text-green-300 text-xs">
+                                        Fecha de inicio: {{ \Carbon\Carbon::parse($torneo->fecha_inicio)->format('d/m/Y') }}
+                                        @if($torneo->fecha_fin) — {{ \Carbon\Carbon::parse($torneo->fecha_fin)->format('d/m/Y') }} @endif
+                                    </p>
+                                @endif
+                            </div>
+                            @php $tieneCampeon = $torneo->draws->contains(fn($d) => $d->partidos->isNotEmpty()); @endphp
+                            @if($tieneCampeon)
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">Finalizado</span>
+                            @elseif($torneo->estado === 'activo')
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">En curso</span>
+                            @endif
+                        </div>
+                        @if(($torneo->tipo ?? 'normal') === 'master')
+                            @if($torneo->masters->isEmpty())
+                                <div class="px-3 py-2 text-yellow-300/60 text-xs italic">⭐ Master — Sin categorías configuradas aún.</div>
+                            @else
+                                <div class="divide-y divide-white/10">
+                                    @foreach($torneo->masters as $master)
+                                        <div class="px-3 py-2 flex items-center gap-2">
+                                            <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">
+                                                ⭐ Cat. {{ $master->categoria->nombre }}
+                                                <span class="text-yellow-300/70 font-normal">Master</span>
+                                            </p>
+                                            <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de="
+                                               onclick="window.location.replace(this.href); return false;"
+                                               class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                                Ver Master
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        @elseif($torneo->draws->isEmpty())
+                            <div class="px-3 py-2 text-green-300/60 text-xs italic">Draw no disponible aún.</div>
+                        @else
+                            <div class="divide-y divide-white/10">
+                                @foreach($torneo->draws as $draw)
+                                    <div class="px-3 py-2 flex items-center gap-2">
+                                        <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
+                                        <div class="flex gap-1.5 shrink-0">
+                                            <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de="
+                                               onclick="window.location.replace(this.href); return false;"
+                                               class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                📋 Resultados
+                                            </a>
+                                            <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de="
+                                               onclick="window.location.replace(this.href); return false;"
+                                               class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                🎯 Draw
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            @endif
+
             <div class="px-4 pt-4 pb-3 grid grid-cols-2 gap-3">
                 <button wire:click="abrirRanking"
                         class="flex flex-col items-center gap-2 bg-yellow-400/20 border border-yellow-300/40
@@ -466,83 +540,6 @@
                 @endif
             </div>
 
-            <div class="px-4 pb-4 pt-1 space-y-2">
-                @if($torneos->isEmpty())
-                    <div class="text-green-200/70 text-xs italic text-center py-3">
-                        No hay torneos disponibles por el momento.
-                    </div>
-                @else
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="h-px flex-1 bg-white/20"></div>
-                        <span class="text-green-300 text-xs font-semibold uppercase tracking-widest">Torneos activos</span>
-                        <div class="h-px flex-1 bg-white/20"></div>
-                    </div>
-                    @foreach($torneos as $torneo)
-                        <div class="border border-white/20 rounded-xl overflow-hidden">
-                            <div class="bg-white/10 px-3 py-2.5 flex items-center justify-between gap-2">
-                                <div class="min-w-0">
-                                    <p class="text-white font-bold text-sm truncate">{{ $torneo->nombre }}</p>
-                                    @if($torneo->fecha_inicio)
-                                        <p class="text-green-300 text-xs">
-                                            Fecha de inicio: {{ \Carbon\Carbon::parse($torneo->fecha_inicio)->format('d/m/Y') }}
-                                            @if($torneo->fecha_fin) — {{ \Carbon\Carbon::parse($torneo->fecha_fin)->format('d/m/Y') }} @endif
-                                        </p>
-                                    @endif
-                                </div>
-                                @php $tieneCampeon = $torneo->draws->contains(fn($d) => $d->partidos->isNotEmpty()); @endphp
-                                @if($tieneCampeon)
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">Finalizado</span>
-                                @elseif($torneo->estado === 'activo')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-500 text-white shrink-0">En curso</span>
-                                @endif
-                            </div>
-                            @if(($torneo->tipo ?? 'normal') === 'master')
-                                @if($torneo->masters->isEmpty())
-                                    <div class="px-3 py-2 text-yellow-300/60 text-xs italic">⭐ Master — Sin categorías configuradas aún.</div>
-                                @else
-                                    <div class="divide-y divide-white/10">
-                                        @foreach($torneo->masters as $master)
-                                            <div class="px-3 py-2 flex items-center gap-2">
-                                                <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">
-                                                    ⭐ Cat. {{ $master->categoria->nombre }}
-                                                    <span class="text-yellow-300/70 font-normal">Master</span>
-                                                </p>
-                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de="
-                                                   onclick="window.location.replace(this.href); return false;"
-                                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
-                                                    Ver Master
-                                                </a>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            @elseif($torneo->draws->isEmpty())
-                                <div class="px-3 py-2 text-green-300/60 text-xs italic">Draw no disponible aún.</div>
-                            @else
-                                <div class="divide-y divide-white/10">
-                                    @foreach($torneo->draws as $draw)
-                                        <div class="px-3 py-2 flex items-center gap-2">
-                                            <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
-                                            <div class="flex gap-1.5 shrink-0">
-                                                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de="
-                                                   onclick="window.location.replace(this.href); return false;"
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
-                                                    📋 Resultados
-                                                </a>
-                                                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de="
-                                                   onclick="window.location.replace(this.href); return false;"
-                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
-                                                    🎯 Draw
-                                                </a>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-                    @endforeach
-                @endif
-            </div>
 
             <div class="px-4 pt-1 pb-4 border-t border-white/10">
                 <div class="text-center">
