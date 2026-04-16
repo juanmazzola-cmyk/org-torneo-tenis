@@ -538,7 +538,10 @@ class MasterDetalle extends Component
             );
         }
 
-        $jugadoresDisponibles = Jugador::where('apellido', '!=', 'Bye')
+        $jugadoresDisponibles = Jugador::whereHas('inscripciones', fn($q) =>
+                $q->where('torneo_id', $this->master->torneo_id)
+                  ->where('categoria_id', $this->master->categoria_id)
+            )
             ->when($this->buscarJugador, fn($q) =>
                 $q->where(fn($q2) =>
                     $q2->where('apellido', 'like', '%' . $this->buscarJugador . '%')
