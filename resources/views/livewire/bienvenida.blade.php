@@ -9,20 +9,10 @@
     <div class="flex flex-col min-h-screen">
         <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
             <div class="max-w-5xl mx-auto px-4 py-3 space-y-2">
-                {{-- Fila 1: título + categoría --}}
-                <div class="flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                        <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
-                    </div>
-                    <select wire:model.live="filtroCategoria"
-                            class="bg-green-800 border border-green-600 text-white text-sm rounded-lg px-3 py-1.5
-                                   focus:outline-none focus:ring-2 focus:ring-green-400">
-                        <option value="">Todas las categorías</option>
-                        @foreach($categorias as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
-                        @endforeach
-                    </select>
+                {{-- Fila 1: título --}}
+                <div class="flex items-center gap-3">
+                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                    <h1 class="text-white font-bold text-lg">🏆 Ranking General</h1>
                 </div>
                 {{-- Fila 2: solapas de año --}}
                 <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
@@ -43,6 +33,27 @@
                         Todos
                     </button>
                 </div>
+                {{-- Fila 3: solapas de categoría --}}
+                @if($categorias->isNotEmpty())
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    <button wire:click="$set('filtroCategoria', '')"
+                            class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                                   {{ $filtroCategoria === ''
+                                       ? 'bg-yellow-300 text-green-900'
+                                       : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                        Todas
+                    </button>
+                    @foreach($categorias as $cat)
+                    <button wire:click="$set('filtroCategoria', '{{ $cat->id }}')"
+                            class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                                   {{ (string)$filtroCategoria === (string)$cat->id
+                                       ? 'bg-yellow-300 text-green-900'
+                                       : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                        Cat. {{ $cat->nombre }}
+                    </button>
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
 

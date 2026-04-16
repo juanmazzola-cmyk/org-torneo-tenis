@@ -148,12 +148,17 @@ class Bienvenida extends Component
                 $jugadorSeleccionado = Jugador::find($this->jugadorId);
                 $id = $this->jugadorId;
 
+                $byeId = \App\Models\Jugador::where('apellido', 'Bye')->where('nombre', 'Bye')->value('id');
+
                 $drawPartidos = Partido::with(['draw.torneo', 'draw.categoria', 'jugador1', 'jugador2'])
                     ->where(function($q) use ($id) {
                         $q->where('jugador1_id', $id)->orWhere('jugador2_id', $id);
                     })
                     ->whereNotNull('ganador_id')
                     ->whereHas('draw.torneo')
+                    ->when($byeId, fn($q) =>
+                        $q->where('jugador1_id', '!=', $byeId)->where('jugador2_id', '!=', $byeId)
+                    )
                     ->get();
 
                 $masterPartidos = MasterPartido::with([
