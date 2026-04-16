@@ -219,7 +219,8 @@
                                     ⭐ Categoría {{ $master->categoria->nombre }}
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
                                 </p>
-                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de={{ $panel }}" wire:navigate.replace
+                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de={{ $panel }}"
+                                   onclick="window.location.replace(this.href); return false;"
                                    class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
                                           text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                     Ver Master
@@ -233,12 +234,14 @@
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Draw de {{ $draw->tamano }}</span>
                                 </p>
                                 <div class="flex gap-2">
-                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ $panel }}" wire:navigate.replace
+                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ $panel }}"
+                                       onclick="window.location.replace(this.href); return false;"
                                        class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
                                               text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
                                         📋 Resultados
                                     </a>
-                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de={{ $panel }}" wire:navigate.replace
+                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de={{ $panel }}"
+                                       onclick="window.location.replace(this.href); return false;"
                                        class="flex-1 text-center bg-green-500 hover:bg-green-400
                                               text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
                                         🎯 Draw
@@ -504,7 +507,8 @@
                                                     ⭐ Cat. {{ $master->categoria->nombre }}
                                                     <span class="text-yellow-300/70 font-normal">Master</span>
                                                 </p>
-                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de=" wire:navigate.replace
+                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de="
+                                                   onclick="window.location.replace(this.href); return false;"
                                                    class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                                     Ver Master
                                                 </a>
@@ -520,11 +524,13 @@
                                         <div class="px-3 py-2 flex items-center gap-2">
                                             <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
                                             <div class="flex gap-1.5 shrink-0">
-                                                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de=" wire:navigate.replace
+                                                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de="
+                                                   onclick="window.location.replace(this.href); return false;"
                                                    class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     📋 Resultados
                                                 </a>
-                                                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de=" wire:navigate.replace
+                                                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de="
+                                                   onclick="window.location.replace(this.href); return false;"
                                                    class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     🎯 Draw
                                                 </a>
