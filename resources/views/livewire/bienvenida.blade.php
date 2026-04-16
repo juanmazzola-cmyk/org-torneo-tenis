@@ -422,7 +422,7 @@
             <div class="bg-gradient-to-r from-white/15 to-transparent px-5 py-4 flex items-center gap-3 border-b border-white/15">
                 <span class="text-3xl">📺</span>
                 <div>
-                    <h2 class="text-white font-extrabold text-xl leading-tight">Panel-Online</h2>
+                    <h2 class="text-white font-extrabold text-xl leading-tight">Panel Online</h2>
                     <p class="text-green-300 text-xs mt-0.5 tracking-wide">Seguí el torneo en tiempo real</p>
                 </div>
             </div>
