@@ -2,26 +2,6 @@
      style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
     {{-- ═══════════════════════════════════════════════════════
-         IFRAME OVERLAY (Draw / Resultados / Ver Master)
-         Carga en su propio contexto — el historial del padre
-         nunca cambia, Salir siempre funciona.
-    ═══════════════════════════════════════════════════════ --}}
-    @if($iframeUrl)
-    <div wire:key="iframe-{{ md5($iframeUrl) }}" class="fixed inset-0 z-50 flex flex-col bg-green-950">
-        <div class="flex items-center px-4 py-2.5 bg-green-900/95 border-b border-green-700/50 shrink-0">
-            <button wire:click="cerrarIframe"
-                    class="text-green-400 hover:text-white transition text-sm font-semibold">
-                ← Volver
-            </button>
-        </div>
-        <iframe src="{{ $iframeUrl }}"
-                class="flex-1 w-full border-0 bg-green-950"
-                style="height: calc(100dvh - 48px)">
-        </iframe>
-    </div>
-    @endif
-
-    {{-- ═══════════════════════════════════════════════════════
          PANEL: RANKING
     ═══════════════════════════════════════════════════════ --}}
     @if($panel === 'ranking')
@@ -169,6 +149,27 @@
                         Todos
                     </button>
                 </div>
+                {{-- Fila 3: solapas de categoría --}}
+                @if($categorias->isNotEmpty())
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                    <button wire:click="$set('filtroCategoriaTorneos', '')"
+                            class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                                   {{ $filtroCategoriaTorneos === ''
+                                       ? 'bg-yellow-300 text-green-900'
+                                       : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                        Todas
+                    </button>
+                    @foreach($categorias as $cat)
+                    <button wire:click="$set('filtroCategoriaTorneos', '{{ $cat->id }}')"
+                            class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                                   {{ (string)$filtroCategoriaTorneos === (string)$cat->id
+                                       ? 'bg-yellow-300 text-green-900'
+                                       : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                        Cat. {{ $cat->nombre }}
+                    </button>
+                    @endforeach
+                </div>
+                @endif
             </div>
         </div>
 
@@ -192,37 +193,45 @@
                         </div>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-500 text-white shrink-0">Finalizado</span>
                     </div>
+                    @php
+                        $mastersMostrar = $torneo->masters->where('estado', 'finalizado');
+                        $drawsMostrar   = $torneo->draws;
+                        if ($filtroCategoriaTorneos) {
+                            $mastersMostrar = $mastersMostrar->where('categoria_id', (int)$filtroCategoriaTorneos);
+                            $drawsMostrar   = $drawsMostrar->where('categoria_id', (int)$filtroCategoriaTorneos);
+                        }
+                    @endphp
                     <div class="divide-y divide-white/10">
-                        @foreach($torneo->masters->where('estado', 'finalizado') as $master)
+                        @foreach($mastersMostrar as $master)
                             <div class="px-5 py-3 flex items-center gap-2">
                                 <p class="text-white font-semibold text-sm flex-1 min-w-0">
                                     ⭐ Categoría {{ $master->categoria->nombre }}
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
                                 </p>
-                                <button wire:click="abrirIframe('{{ route('live.master', [$torneo->id, $master->id]) }}')"
-                                        class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
-                                               text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
+                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
+                                          text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                     Ver Master
-                                </button>
+                                </a>
                             </div>
                         @endforeach
-                        @foreach($torneo->draws as $draw)
+                        @foreach($drawsMostrar as $draw)
                             <div class="px-5 py-3">
                                 <p class="text-white font-semibold text-sm mb-2">
                                     Categoría {{ $draw->categoria->nombre }}
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Draw de {{ $draw->tamano }}</span>
                                 </p>
                                 <div class="flex gap-2">
-                                    <button wire:click="abrirIframe('{{ route('live.resultados', [$torneo->id, $draw->id]) }}')"
-                                            class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
-                                                   text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}" wire:navigate
+                                       class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
+                                              text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
                                         📋 Resultados
-                                    </button>
-                                    <button wire:click="abrirIframe('{{ route('live.draw', [$torneo->id, $draw->id]) }}')"
-                                            class="flex-1 text-center bg-green-500 hover:bg-green-400
-                                                   text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
+                                    </a>
+                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
+                                       class="flex-1 text-center bg-green-500 hover:bg-green-400
+                                              text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
                                         🎯 Draw
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         @endforeach
@@ -484,10 +493,10 @@
                                                     ⭐ Cat. {{ $master->categoria->nombre }}
                                                     <span class="text-yellow-300/70 font-normal">Master</span>
                                                 </p>
-                                                <button wire:click="abrirIframe('{{ route('live.master', [$torneo->id, $master->id]) }}')"
-                                                        class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
+                                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
+                                                   class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
                                                     Ver Master
-                                                </button>
+                                                </a>
                                             </div>
                                         @endforeach
                                     </div>
@@ -500,14 +509,14 @@
                                         <div class="px-3 py-2 flex items-center gap-2">
                                             <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">Cat. {{ $draw->categoria->nombre }}</p>
                                             <div class="flex gap-1.5 shrink-0">
-                                                <button wire:click="abrirIframe('{{ route('live.resultados', [$torneo->id, $draw->id]) }}')"
-                                                        class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}" wire:navigate
+                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     📋 Resultados
-                                                </button>
-                                                <button wire:click="abrirIframe('{{ route('live.draw', [$torneo->id, $draw->id]) }}')"
-                                                        class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                                                </a>
+                                                <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}" wire:navigate
+                                                   class="bg-white/15 hover:bg-white/25 border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
                                                     🎯 Draw
-                                                </button>
+                                                </a>
                                             </div>
                                         </div>
                                     @endforeach

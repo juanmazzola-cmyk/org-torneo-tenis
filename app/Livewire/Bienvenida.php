@@ -10,34 +10,45 @@ use App\Models\MasterPartido;
 use App\Models\Partido;
 use App\Models\Torneo;
 use App\Services\RankingService;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Bienvenida extends Component
 {
-    public string $panel = '';           // '' | 'ranking' | 'torneos' | 'misPartidos'
-    public string $filtroCategoria = '';
-    public string $filtroAnio      = '';
-    public string $iframeUrl = '';       // URL cargada en el iframe overlay
+    #[Url(as: 'panel')]
+    public string $panel = '';           // '' | 'ranking' | 'torneos' | 'misPartidos' | 'info'
+
+    #[Url(as: 'cat')]
+    public string $filtroCategoria = ''; // ranking
+
+    #[Url(as: 'anio')]
+    public string $filtroAnio = '';      // ranking + torneos
+
+    #[Url(as: 'cattor')]
+    public string $filtroCategoriaTorneos = ''; // torneos
+
     public string $busqueda = '';        // búsqueda de jugador en "Mis Partidos"
     public ?int   $jugadorId = null;     // jugador seleccionado en "Mis Partidos"
 
     public function abrirRanking(): void
     {
-        $this->panel      = 'ranking';
-        $this->filtroAnio = (string) now()->year;
+        $this->panel           = 'ranking';
+        $this->filtroAnio      = (string) now()->year;
+        $this->filtroCategoria = '';
     }
 
     public function abrirTorneos(): void
     {
-        $this->panel      = 'torneos';
-        $this->filtroAnio = (string) now()->year;
+        $this->panel                  = 'torneos';
+        $this->filtroAnio             = (string) now()->year;
+        $this->filtroCategoriaTorneos = '';
     }
 
     public function abrirMisPartidos(): void
     {
-        $this->panel       = 'misPartidos';
-        $this->jugadorId   = null;
-        $this->busqueda    = '';
+        $this->panel     = 'misPartidos';
+        $this->jugadorId = null;
+        $this->busqueda  = '';
     }
 
     public function abrirInfo(): void
@@ -45,24 +56,14 @@ class Bienvenida extends Component
         $this->panel = 'info';
     }
 
-    public function abrirIframe(string $url): void
-    {
-        $this->iframeUrl = $url;
-    }
-
-    public function cerrarIframe(): void
-    {
-        $this->iframeUrl = '';
-    }
-
     public function cerrar(): void
     {
-        $this->panel           = '';
-        $this->iframeUrl       = '';
-        $this->filtroCategoria = '';
-        $this->filtroAnio      = '';
-        $this->jugadorId       = null;
-        $this->busqueda        = '';
+        $this->panel                  = '';
+        $this->filtroCategoria        = '';
+        $this->filtroAnio             = '';
+        $this->filtroCategoriaTorneos = '';
+        $this->jugadorId              = null;
+        $this->busqueda               = '';
     }
 
     public function seleccionarJugador(int $id): void
@@ -96,8 +97,8 @@ class Bienvenida extends Component
         $clubCiudad = Config::get('club_ciudad', '');
         $panelInfo  = Config::get('panel_info', '');
 
+        $categorias     = Categoria::orderBy('nombre')->get();
         $categoriasData = [];
-        $categorias     = collect();
 
         if ($this->panel === 'ranking') {
             $categoriasData = RankingService::calcular(
@@ -105,11 +106,12 @@ class Bienvenida extends Component
                 null,
                 $this->filtroAnio ? (int) $this->filtroAnio : null
             );
-            $categorias = Categoria::orderBy('nombre')->get();
         }
 
         $torneosFinalizados = collect();
         if ($this->panel === 'torneos') {
+            $catId = $this->filtroCategoriaTorneos ? (int) $this->filtroCategoriaTorneos : null;
+
             $torneosFinalizados = Torneo::with([
                 'draws.categoria',
                 'draws.partidos' => fn($q) => $q->where('ronda', 1)->whereNotNull('ganador_id'),
@@ -118,14 +120,16 @@ class Bienvenida extends Component
             ->when($this->filtroAnio, fn($q) => $q->whereYear('fecha_inicio', $this->filtroAnio))
             ->orderBy('fecha_inicio', 'desc')
             ->get()
-            ->filter(fn($t) =>
-                $t->draws->contains(fn($d) => $d->partidos->isNotEmpty()) ||
-                $t->masters->contains(fn($m) => $m->estado === 'finalizado')
-            );
+            ->filter(function ($t) use ($catId) {
+                $draws   = $catId ? $t->draws->where('categoria_id', $catId)   : $t->draws;
+                $masters = $catId ? $t->masters->where('categoria_id', $catId) : $t->masters;
+                return $draws->contains(fn($d) => $d->partidos->isNotEmpty()) ||
+                       $masters->contains(fn($m) => $m->estado === 'finalizado');
+            });
         }
 
         // Mis Partidos
-        $jugadores          = collect();
+        $jugadores           = collect();
         $jugadorSeleccionado = null;
         $misPartidosPorAnio  = [];
 
@@ -144,7 +148,6 @@ class Bienvenida extends Component
                 $jugadorSeleccionado = Jugador::find($this->jugadorId);
                 $id = $this->jugadorId;
 
-                // Partidos de draw
                 $drawPartidos = Partido::with(['draw.torneo', 'draw.categoria', 'jugador1', 'jugador2'])
                     ->where(function($q) use ($id) {
                         $q->where('jugador1_id', $id)->orWhere('jugador2_id', $id);
@@ -153,7 +156,6 @@ class Bienvenida extends Component
                     ->whereHas('draw.torneo')
                     ->get();
 
-                // Partidos de master (zona)
                 $masterPartidos = MasterPartido::with([
                     'grupo.master.torneo', 'grupo.master.categoria', 'jugador1', 'jugador2',
                 ])
@@ -164,7 +166,6 @@ class Bienvenida extends Component
                     ->whereHas('grupo.master.torneo')
                     ->get();
 
-                // Fase final de master
                 $masterFinales = MasterFinal::with([
                     'master.torneo', 'master.categoria', 'jugador1', 'jugador2',
                 ])
@@ -178,8 +179,7 @@ class Bienvenida extends Component
                 $todos = collect();
 
                 foreach ($drawPartidos as $p) {
-                    $anio = $p->draw->torneo->fecha_inicio?->year
-                          ?? $p->created_at->year;
+                    $anio = $p->draw->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
                         'anio'      => $anio,
                         'torneo'    => $p->draw->torneo->nombre,
@@ -192,8 +192,7 @@ class Bienvenida extends Component
                 }
 
                 foreach ($masterPartidos as $p) {
-                    $anio = $p->grupo->master->torneo->fecha_inicio?->year
-                          ?? $p->created_at->year;
+                    $anio = $p->grupo->master->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
                         'anio'      => $anio,
                         'torneo'    => $p->grupo->master->torneo->nombre,
@@ -206,8 +205,7 @@ class Bienvenida extends Component
                 }
 
                 foreach ($masterFinales as $p) {
-                    $anio = $p->master->torneo->fecha_inicio?->year
-                          ?? $p->created_at->year;
+                    $anio = $p->master->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
                         'anio'      => $anio,
                         'torneo'    => $p->master->torneo->nombre,
@@ -219,9 +217,7 @@ class Bienvenida extends Component
                     ]);
                 }
 
-                $misPartidosPorAnio = $todos->sortByDesc('anio')
-                    ->groupBy('anio')
-                    ->all();
+                $misPartidosPorAnio = $todos->sortByDesc('anio')->groupBy('anio')->all();
             }
         }
 

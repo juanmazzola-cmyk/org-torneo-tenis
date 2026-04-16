@@ -3,6 +3,10 @@
     <!-- Header -->
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+            <button onclick="history.back()"
+                    class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
+                ← Volver
+            </button>
             <div class="min-w-0">
                 <h1 class="text-white font-bold text-base truncate">⭐ {{ $master->torneo->nombre }}</h1>
                 <p class="text-yellow-300 text-xs">Master — Categoría {{ $master->categoria->nombre }}</p>

@@ -4,6 +4,10 @@
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-full px-4 md:px-8 py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
+                <button onclick="history.back()"
+                        class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
+                    ← Volver
+                </button>
                 <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}"
                    class="text-green-300 hover:text-white text-xs transition underline underline-offset-2 shrink-0">
                     📋 Resultados
