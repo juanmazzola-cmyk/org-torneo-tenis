@@ -314,6 +314,42 @@
                 </button>
             </div>
 
+            {{-- Filtros: año --}}
+            @if($misAniosJugador->isNotEmpty())
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                <button wire:click="$set('misAnio', '')"
+                        class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                               {{ $misAnio === '' ? 'bg-white text-green-900' : 'bg-white/15 text-white hover:bg-white/25' }}">
+                    Todos
+                </button>
+                @foreach($misAniosJugador as $anio)
+                <button wire:click="$set('misAnio', '{{ $anio }}')"
+                        class="shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition
+                               {{ (string)$misAnio === (string)$anio ? 'bg-white text-green-900' : 'bg-white/15 text-white hover:bg-white/25' }}">
+                    {{ $anio }}
+                </button>
+                @endforeach
+            </div>
+            @endif
+
+            {{-- Filtros: torneo --}}
+            @if($misTorneosJugador->count() > 1)
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                <button wire:click="$set('misTorneoId', null)"
+                        class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                               {{ $misTorneoId === null ? 'bg-yellow-300 text-green-900' : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                    Todos
+                </button>
+                @foreach($misTorneosJugador as $t)
+                <button wire:click="$set('misTorneoId', {{ $t['id'] }})"
+                        class="shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition
+                               {{ $misTorneoId === $t['id'] ? 'bg-yellow-300 text-green-900' : 'bg-white/10 text-green-200 hover:bg-white/20' }}">
+                    {{ $t['nombre'] }}
+                </button>
+                @endforeach
+            </div>
+            @endif
+
             @if(empty($misPartidosPorAnio))
                 <div class="bg-white/10 rounded-2xl p-8 text-center text-green-200">
                     No hay partidos registrados para este jugador.

@@ -27,8 +27,10 @@ class Bienvenida extends Component
     #[Url(as: 'cattor')]
     public string $filtroCategoriaTorneos = ''; // torneos
 
-    public string $busqueda = '';        // búsqueda de jugador en "Mis Partidos"
-    public ?int   $jugadorId = null;     // jugador seleccionado en "Mis Partidos"
+    public string $busqueda    = '';      // búsqueda de jugador en "Mis Partidos"
+    public ?int   $jugadorId  = null;    // jugador seleccionado en "Mis Partidos"
+    public string $misAnio    = '';      // filtro año en "Mis Partidos"
+    public ?int   $misTorneoId = null;   // filtro torneo en "Mis Partidos"
 
     public function abrirRanking(): void
     {
@@ -46,9 +48,11 @@ class Bienvenida extends Component
 
     public function abrirMisPartidos(): void
     {
-        $this->panel     = 'misPartidos';
-        $this->jugadorId = null;
-        $this->busqueda  = '';
+        $this->panel       = 'misPartidos';
+        $this->jugadorId   = null;
+        $this->busqueda    = '';
+        $this->misAnio     = '';
+        $this->misTorneoId = null;
     }
 
     public function abrirInfo(): void
@@ -64,12 +68,21 @@ class Bienvenida extends Component
         $this->filtroCategoriaTorneos = '';
         $this->jugadorId              = null;
         $this->busqueda               = '';
+        $this->misAnio                = '';
+        $this->misTorneoId            = null;
     }
 
     public function seleccionarJugador(int $id): void
     {
-        $this->jugadorId = $id;
-        $this->busqueda  = '';
+        $this->jugadorId   = $id;
+        $this->busqueda    = '';
+        $this->misAnio     = '';
+        $this->misTorneoId = null;
+    }
+
+    public function updatedMisAnio(): void
+    {
+        $this->misTorneoId = null;
     }
 
     private function nombreRonda(int $ronda): string
@@ -186,43 +199,62 @@ class Bienvenida extends Component
                 foreach ($drawPartidos as $p) {
                     $anio = $p->draw->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
-                        'anio'      => $anio,
-                        'torneo'    => $p->draw->torneo->nombre,
-                        'categoria' => $p->draw->categoria->nombre,
-                        'ronda'     => $this->nombreRonda($p->ronda),
-                        'rival'     => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
-                        'resultado' => $p->resultado,
-                        'gano'      => $p->ganador_id == $id,
+                        'anio'       => $anio,
+                        'torneo_id'  => $p->draw->torneo->id,
+                        'torneo'     => $p->draw->torneo->nombre,
+                        'categoria'  => $p->draw->categoria->nombre,
+                        'ronda'      => $this->nombreRonda($p->ronda),
+                        'rival'      => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
+                        'resultado'  => $p->resultado,
+                        'gano'       => $p->ganador_id == $id,
                     ]);
                 }
 
                 foreach ($masterPartidos as $p) {
                     $anio = $p->grupo->master->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
-                        'anio'      => $anio,
-                        'torneo'    => $p->grupo->master->torneo->nombre,
-                        'categoria' => $p->grupo->master->categoria->nombre,
-                        'ronda'     => 'Zona – Jornada ' . $p->jornada,
-                        'rival'     => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
-                        'resultado' => $p->resultado,
-                        'gano'      => $p->ganador_id == $id,
+                        'anio'       => $anio,
+                        'torneo_id'  => $p->grupo->master->torneo->id,
+                        'torneo'     => $p->grupo->master->torneo->nombre,
+                        'categoria'  => $p->grupo->master->categoria->nombre,
+                        'ronda'      => 'Zona – Jornada ' . $p->jornada,
+                        'rival'      => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
+                        'resultado'  => $p->resultado,
+                        'gano'       => $p->ganador_id == $id,
                     ]);
                 }
 
                 foreach ($masterFinales as $p) {
                     $anio = $p->master->torneo->fecha_inicio?->year ?? $p->created_at->year;
                     $todos->push([
-                        'anio'      => $anio,
-                        'torneo'    => $p->master->torneo->nombre,
-                        'categoria' => $p->master->categoria->nombre,
-                        'ronda'     => $p->label(),
-                        'rival'     => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
-                        'resultado' => $p->resultado,
-                        'gano'      => $p->ganador_id == $id,
+                        'anio'       => $anio,
+                        'torneo_id'  => $p->master->torneo->id,
+                        'torneo'     => $p->master->torneo->nombre,
+                        'categoria'  => $p->master->categoria->nombre,
+                        'ronda'      => $p->label(),
+                        'rival'      => $p->jugador1_id == $id ? $p->jugador2 : $p->jugador1,
+                        'resultado'  => $p->resultado,
+                        'gano'       => $p->ganador_id == $id,
                     ]);
                 }
 
-                $misPartidosPorAnio = $todos->sortByDesc('anio')->groupBy('anio')->all();
+                // Años disponibles para este jugador
+                $misAniosJugador = $todos->pluck('anio')->unique()->sortDesc()->values();
+
+                // Torneos disponibles (filtrados por año si corresponde)
+                $misTorneosJugador = $todos
+                    ->when($this->misAnio !== '', fn($c) => $c->where('anio', (int)$this->misAnio))
+                    ->unique('torneo_id')
+                    ->sortBy('torneo')
+                    ->values()
+                    ->map(fn($item) => ['id' => $item['torneo_id'], 'nombre' => $item['torneo']]);
+
+                // Aplicar filtros
+                $todosFiltrados = $todos
+                    ->when($this->misAnio !== '', fn($c) => $c->where('anio', (int)$this->misAnio))
+                    ->when($this->misTorneoId, fn($c) => $c->where('torneo_id', $this->misTorneoId));
+
+                $misPartidosPorAnio = $todosFiltrados->sortByDesc('anio')->groupBy('anio')->all();
             }
         }
 
@@ -231,10 +263,14 @@ class Bienvenida extends Component
             ->map(fn($t) => \Carbon\Carbon::parse($t->fecha_inicio)->year)
             ->unique()->sortDesc()->values();
 
+        $misAniosJugador   = $misAniosJugador   ?? collect();
+        $misTorneosJugador = $misTorneosJugador ?? collect();
+
         return view('livewire.bienvenida', compact(
             'torneos', 'clubNombre', 'clubCiudad', 'panelInfo',
             'categoriasData', 'categorias', 'torneosFinalizados',
-            'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio', 'anos'
+            'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio', 'anos',
+            'misAniosJugador', 'misTorneosJugador'
         ))->layout('layouts.publica');
     }
 }
