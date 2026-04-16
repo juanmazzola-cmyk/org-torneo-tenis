@@ -76,7 +76,7 @@ class Bienvenida extends Component
     {
         $this->jugadorId   = $id;
         $this->busqueda    = '';
-        $this->misAnio     = '';
+        $this->misAnio     = (string) now()->year;
         $this->misTorneoId = null;
     }
 
