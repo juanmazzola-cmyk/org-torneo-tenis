@@ -1,15 +1,15 @@
-<div wire:poll.20s class="min-h-screen flex flex-col bg-white">
+<div wire:poll.60s class="min-h-screen flex flex-col bg-white">
 
     {{-- Header --}}
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-full px-4 md:px-8 py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3 min-w-0">
-                <a href="{{ request()->query('de') !== null ? '/?panel='.request()->query('de') : '/' }}"
+                <a href="{{ request()->query('de') !== null ? '/?panel='.request()->query('de').'&anio='.request()->query('anio', '') : '/' }}"
                    onclick="window.location.replace(this.href); return false;"
                    class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
                     ← Volver
                 </a>
-                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ request()->query('de','') }}"
+                <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ request()->query('de','') }}&anio={{ request()->query('anio','') }}"
                    onclick="window.location.replace(this.href); return false;"
                    class="text-green-300 hover:text-white text-xs transition underline underline-offset-2 shrink-0">
                     📋 Resultados
@@ -181,7 +181,7 @@
 
     {{-- Footer --}}
     <div class="text-center pb-5 text-gray-400 text-xs">
-        Se actualiza automáticamente cada 20 segundos
+        Se actualiza automáticamente cada 60 segundos
     </div>
 
 </div>

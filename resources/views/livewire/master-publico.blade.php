@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
         <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-            <a href="{{ request()->query('de') !== null ? '/?panel='.request()->query('de') : '/' }}"
+            <a href="{{ request()->query('de') !== null ? '/?panel='.request()->query('de').'&anio='.request()->query('anio', '') : '/' }}"
                onclick="window.location.replace(this.href); return false;"
                class="text-green-400 hover:text-white transition text-sm font-semibold shrink-0">
                 ← Volver

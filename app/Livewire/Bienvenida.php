@@ -100,17 +100,21 @@ class Bienvenida extends Component
 
     public function render()
     {
-        $torneos = Torneo::with([
-            'draws.categoria',
-            'draws.partidos' => fn($q) => $q->where('ronda', 1)->whereNotNull('ganador_id'),
-            'masters.categoria',
-        ])->where('estado', 'activo')->orderBy('fecha_inicio', 'desc')->get();
-
         $clubNombre = Config::get('club_nombre', 'Club de Tenis');
         $clubCiudad = Config::get('club_ciudad', '');
         $panelInfo  = Config::get('panel_info', '');
 
-        $categorias     = Categoria::orderBy('nombre')->get();
+        $torneos = $this->panel === ''
+            ? Torneo::with([
+                'draws.categoria',
+                'draws.partidos' => fn($q) => $q->where('ronda', 1)->whereNotNull('ganador_id'),
+                'masters.categoria',
+            ])->where('estado', 'activo')->orderBy('fecha_inicio', 'desc')->get()
+            : collect();
+
+        $needsCats  = in_array($this->panel, ['ranking', 'torneos']);
+        $categorias = $needsCats ? Categoria::orderBy('nombre')->get() : collect();
+
         $categoriasData = [];
 
         if ($this->panel === 'ranking') {
@@ -147,21 +151,28 @@ class Bienvenida extends Component
         $misPartidosPorAnio  = [];
 
         if ($this->panel === 'misPartidos') {
-            $query = Jugador::orderBy('apellido')->orderBy('nombre');
             if (strlen($this->busqueda) >= 2) {
                 $b = $this->busqueda;
-                $query->where(function($q) use ($b) {
-                    $q->where('apellido', 'like', "%{$b}%")
-                      ->orWhere('nombre', 'like', "%{$b}%");
-                });
+                $jugadores = Jugador::with('categoria')
+                    ->where(function($q) use ($b) {
+                        $q->where('apellido', 'like', "%{$b}%")
+                          ->orWhere('nombre', 'like', "%{$b}%");
+                    })
+                    ->orderBy('apellido')
+                    ->orderBy('nombre')
+                    ->limit(20)
+                    ->get();
+            } else {
+                $jugadores = collect();
             }
-            $jugadores = $query->get();
 
             if ($this->jugadorId) {
                 $jugadorSeleccionado = Jugador::find($this->jugadorId);
                 $id = $this->jugadorId;
 
-                $byeId = \App\Models\Jugador::where('apellido', 'Bye')->where('nombre', 'Bye')->value('id');
+                $byeId = \Illuminate\Support\Facades\Cache::remember('bye_jugador_id', 86400,
+                    fn() => \App\Models\Jugador::where('apellido', 'Bye')->where('nombre', 'Bye')->value('id')
+                );
 
                 $drawPartidos = Partido::with(['draw.torneo', 'draw.categoria', 'jugador1', 'jugador2'])
                     ->where(function($q) use ($id) {
@@ -258,10 +269,13 @@ class Bienvenida extends Component
             }
         }
 
-        $anos = Torneo::whereNotNull('fecha_inicio')
-            ->get()
-            ->map(fn($t) => \Carbon\Carbon::parse($t->fecha_inicio)->year)
-            ->unique()->sortDesc()->values();
+        $anos = $needsCats
+            ? Torneo::whereNotNull('fecha_inicio')
+                ->selectRaw('YEAR(fecha_inicio) as anio')
+                ->distinct()
+                ->orderByDesc('anio')
+                ->pluck('anio')
+            : collect();
 
         $misAniosJugador   = $misAniosJugador   ?? collect();
         $misTorneosJugador = $misTorneosJugador ?? collect();

@@ -20,7 +20,7 @@ class DrawPublico extends Component
 
     public function render()
     {
-        $partidos = Partido::with(['jugador1', 'jugador2', 'ganador'])
+        $partidos = Partido::with(['jugador1', 'jugador2'])
             ->where('draw_id', $this->draw->id)
             ->orderBy('ronda', 'desc')
             ->orderBy('posicion')

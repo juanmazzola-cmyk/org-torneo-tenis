@@ -21,7 +21,7 @@ class ResultadosPublico extends Component
     public function render()
     {
         // Solo partidos con resultado cargado, del más avanzado (ronda 1 = final) al inicial
-        $partidos = Partido::with(['jugador1', 'jugador2', 'ganador'])
+        $partidos = Partido::with(['jugador1', 'jugador2'])
             ->where('draw_id', $this->draw->id)
             ->whereNotNull('ganador_id')
             ->where('resultado', '!=', 'Bye')

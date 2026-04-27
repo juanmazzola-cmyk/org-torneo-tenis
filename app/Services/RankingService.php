@@ -6,6 +6,7 @@ use App\Models\Partido;
 use App\Models\Ranking;
 use App\Models\Categoria;
 use App\Models\Torneo;
+use Illuminate\Support\Facades\Cache;
 
 class RankingService
 {
@@ -15,6 +16,11 @@ class RankingService
      */
     public static function calcular(?int $filtroCategoria = null, ?int $filtroTorneo = null, ?int $filtroAnio = null): array
     {
+        $cacheKey = 'ranking_' . md5(serialize([$filtroCategoria, $filtroTorneo, $filtroAnio]));
+        if (($cached = Cache::get($cacheKey)) !== null) {
+            return $cached;
+        }
+
         $categorias = Categoria::orderBy('nombre')
             ->when($filtroCategoria, fn($q) => $q->where('id', $filtroCategoria))
             ->get();
@@ -32,6 +38,21 @@ class RankingService
             ))
             ->get();
 
+        $jugadorIds = $todosRankings->pluck('jugador_id')->unique()->values()->all();
+
+        $todosPartidos = !empty($jugadorIds)
+            ? Partido::with('draw')
+                ->whereHas('draw', fn($q) => $q->whereIn('categoria_id', $categoriaIds))
+                ->where(fn($q) => $q
+                    ->whereIn('jugador1_id', $jugadorIds)
+                    ->orWhereIn('jugador2_id', $jugadorIds)
+                )
+                ->whereNotNull('ganador_id')
+                ->whereNotNull('resultado')
+                ->where('resultado', '!=', 'Bye')
+                ->get()
+            : collect();
+
         $result = [];
 
         foreach ($categorias as $categoria) {
@@ -44,7 +65,7 @@ class RankingService
 
             // Agrupar por jugador y calcular todos los criterios
             $jugadores = $rankings->groupBy('jugador_id')
-                ->map(function ($filas) use ($torneos, $categoria) {
+                ->map(function ($filas) use ($torneos, $categoria, $todosPartidos) {
                     $jugadorId = (int) $filas->first()->jugador_id;
                     $jugador   = $filas->first()->jugador;
 
@@ -63,16 +84,14 @@ class RankingService
                     // Criterio 3: mejor puntaje en un único torneo
                     $mejorTorneo    = $puntosPorTorneo ? max($puntosPorTorneo) : 0;
 
-                    // Criterios 4 y 5: query directa de partidos del jugador en esta categoría
+                    // Criterios 4 y 5: diferencia de sets y games
                     $setsGanados = 0; $setsPerdidos = 0;
                     $gamesGanados = 0; $gamesPerdidos = 0;
 
-                    $misPartidos = Partido::whereHas('draw', fn($q) => $q->where('categoria_id', $categoria->id))
-                        ->where(fn($q) => $q->where('jugador1_id', $jugadorId)->orWhere('jugador2_id', $jugadorId))
-                        ->whereNotNull('ganador_id')
-                        ->whereNotNull('resultado')
-                        ->where('resultado', '!=', 'Bye')
-                        ->get();
+                    $misPartidos = $todosPartidos->filter(
+                        fn($p) => $p->draw->categoria_id == $categoria->id
+                               && ($p->jugador1_id == $jugadorId || $p->jugador2_id == $jugadorId)
+                    );
 
                     foreach ($misPartidos as $partido) {
                         $esGanador = (int)$partido->ganador_id === $jugadorId;
@@ -114,6 +133,7 @@ class RankingService
             ];
         }
 
+        Cache::put($cacheKey, $result, 300);
         return $result;
     }
 

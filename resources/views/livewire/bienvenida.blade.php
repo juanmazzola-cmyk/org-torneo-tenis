@@ -1,4 +1,4 @@
-<div wire:poll.30s class="flex flex-col"
+<div wire:poll.2m class="flex flex-col"
      style="min-height:100dvh; background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('{{ asset('canchatenis.png') }}') center/cover fixed;">
 
     {{-- ═══════════════════════════════════════════════════════
@@ -219,7 +219,7 @@
                                     ⭐ Categoría {{ $master->categoria->nombre }}
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
                                 </p>
-                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de={{ $panel }}"
+                                <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de={{ $panel }}&anio={{ $filtroAnio }}"
                                    onclick="window.location.replace(this.href); return false;"
                                    class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
                                           text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
@@ -234,13 +234,13 @@
                                     <span class="text-yellow-300 text-xs font-normal ml-1">Draw de {{ $draw->tamano }}</span>
                                 </p>
                                 <div class="flex gap-2">
-                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ $panel }}"
+                                    <a href="{{ route('live.resultados', [$torneo->id, $draw->id]) }}?de={{ $panel }}&anio={{ $filtroAnio }}"
                                        onclick="window.location.replace(this.href); return false;"
                                        class="flex-1 text-center bg-white/15 hover:bg-white/25 border border-white/20
                                               text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
                                         📋 Resultados
                                     </a>
-                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de={{ $panel }}"
+                                    <a href="{{ route('live.draw', [$torneo->id, $draw->id]) }}?de={{ $panel }}&anio={{ $filtroAnio }}"
                                        onclick="window.location.replace(this.href); return false;"
                                        class="flex-1 text-center bg-green-500 hover:bg-green-400
                                               text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow">
