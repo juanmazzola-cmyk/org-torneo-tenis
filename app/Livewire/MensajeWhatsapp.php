@@ -10,6 +10,8 @@ class MensajeWhatsapp extends Component
     public string $mensaje = '';
     public array $seleccionados = [];
     public bool $generado = false;
+    public bool $modoDifusion = false;
+    public string $telefonosLista = '';
 
     public function seleccionarTodos(): void
     {
@@ -41,9 +43,32 @@ class MensajeWhatsapp extends Component
         $this->generado = true;
     }
 
+    public function prepararDifusion(): void
+    {
+        $this->validate([
+            'seleccionados' => 'required|array|min:1',
+            'mensaje'       => 'required|min:3',
+        ], [
+            'seleccionados.required' => 'Seleccioná al menos un jugador.',
+            'seleccionados.min'      => 'Seleccioná al menos un jugador.',
+            'mensaje.required'       => 'Escribí el mensaje.',
+            'mensaje.min'            => 'El mensaje es muy corto.',
+        ]);
+
+        $this->telefonosLista = Jugador::whereIn('id', $this->seleccionados)
+            ->whereNotNull('telefono')
+            ->where('telefono', '!=', '')
+            ->whereNot('apellido', 'Bye')
+            ->pluck('telefono')
+            ->join(', ');
+
+        $this->modoDifusion = true;
+        $this->generado = true;
+    }
+
     public function limpiar(): void
     {
-        $this->reset(['mensaje', 'seleccionados', 'generado']);
+        $this->reset(['mensaje', 'seleccionados', 'generado', 'modoDifusion', 'telefonosLista']);
     }
 
     private function formatearTelefono(string $telefono): string

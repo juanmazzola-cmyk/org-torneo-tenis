@@ -60,7 +60,11 @@
             </div>
         </div>
 
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-3">
+            <button wire:click="prepararDifusion"
+                    class="bg-white border border-green-600 text-green-700 px-6 py-2.5 rounded-lg hover:bg-green-50 transition font-semibold flex items-center gap-2">
+                📋 Preparar difusión (copiar números)
+            </button>
             <button wire:click="generar"
                     class="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 transition font-semibold flex items-center gap-2">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -69,6 +73,57 @@
                 </svg>
                 Generar links de WhatsApp
             </button>
+        </div>
+
+    @elseif($modoDifusion)
+
+        {{-- Panel difusión --}}
+        <div class="bg-white rounded-xl shadow p-5 mb-5" x-data="{ copiadoTels: false, copiadoMsj: false }">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="font-semibold text-gray-800">📋 Difusión masiva ({{ count($seleccionados) }} jugadores)</h2>
+                <button wire:click="limpiar" class="text-sm text-gray-500 hover:text-gray-700 underline">
+                    ← Nuevo mensaje
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                {{-- Teléfonos --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Números de teléfono
+                        <span class="text-gray-400 font-normal">(para lista de difusión de WhatsApp)</span>
+                    </label>
+                    <textarea x-ref="tels" rows="6" readonly
+                              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 resize-none focus:outline-none font-mono"
+                    >{{ $telefonosLista ?: '— Ningún jugador seleccionado tiene teléfono cargado —' }}</textarea>
+                    <button
+                        @click="navigator.clipboard.writeText($refs.tels.value); copiadoTels = true; setTimeout(() => copiadoTels = false, 2000)"
+                        class="mt-2 w-full py-2 rounded-lg text-sm font-medium transition border"
+                        :class="copiadoTels ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                        <span x-show="!copiadoTels">Copiar números</span>
+                        <span x-show="copiadoTels">¡Copiado!</span>
+                    </button>
+                </div>
+
+                {{-- Mensaje --}}
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Mensaje listo para enviar
+                    </label>
+                    <textarea x-ref="msj" rows="6" readonly
+                              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 resize-none focus:outline-none"
+                    >{{ $mensaje }}</textarea>
+                    <button
+                        @click="navigator.clipboard.writeText($refs.msj.value); copiadoMsj = true; setTimeout(() => copiadoMsj = false, 2000)"
+                        class="mt-2 w-full py-2 rounded-lg text-sm font-medium transition border"
+                        :class="copiadoMsj ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                        <span x-show="!copiadoMsj">Copiar mensaje</span>
+                        <span x-show="copiadoMsj">¡Copiado!</span>
+                    </button>
+                </div>
+
+            </div>
         </div>
 
     @else
