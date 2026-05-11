@@ -442,6 +442,12 @@
         </div>
     </div>
 
+    @if($bannerUrl)
+    <div class="max-w-2xl mx-auto w-full px-3 mb-4">
+        <img src="{{ $bannerUrl }}" alt="Banner" class="w-full rounded-2xl shadow-2xl">
+    </div>
+    @endif
+
     <div class="max-w-2xl mx-auto w-full px-3 pb-8">
         <div class="bg-white/10 backdrop-blur-sm border border-white/25 rounded-2xl overflow-hidden shadow-2xl">
 

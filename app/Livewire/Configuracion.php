@@ -19,6 +19,7 @@ class Configuracion extends Component
     public string $puntos_32avos   = '';
     public string $admin_code      = '';
     public string $panel_info     = '';
+    public string $banner_url    = '';
 
     public function mount(): void
     {
@@ -34,6 +35,7 @@ class Configuracion extends Component
         $this->puntos_32avos     = Config::get('puntos_32avos',     '4');
         $this->admin_code        = Config::get('admin_code',        'ADMIN1');
         $this->panel_info        = Config::get('panel_info',        '');
+        $this->banner_url        = Config::get('banner_url',        '');
     }
 
     protected function rules(): array
@@ -51,6 +53,7 @@ class Configuracion extends Component
             'puntos_32avos'     => 'required|integer|min:0',
             'admin_code'        => 'required|min:4|max:20',
             'panel_info'        => 'nullable|max:2000',
+            'banner_url'        => 'nullable|max:500',
         ];
     }
 
@@ -70,6 +73,7 @@ class Configuracion extends Component
         Config::set('puntos_32avos',     $this->puntos_32avos);
         Config::set('admin_code',        $this->admin_code);
         Config::set('panel_info',        $this->panel_info);
+        Config::set('banner_url',        $this->banner_url);
 
         session()->flash('ok', 'Configuración guardada correctamente.');
     }

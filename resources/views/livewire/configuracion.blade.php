@@ -101,6 +101,25 @@
             </div>
         </div>
 
+        <!-- Banner publicitario -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">🖼️ Banner publicitario</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Pegá la URL de una imagen alojada en DonWeb u otro servidor. Aparecerá en la pantalla pública debajo del nombre del club.
+                Si lo dejás vacío, no se muestra nada.
+            </p>
+            <input type="text" wire:model="banner_url"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
+                   placeholder="https://tusitio.com/banners/torneo-invierno.jpg">
+            @error('banner_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            @if($banner_url)
+                <div class="mt-3">
+                    <p class="text-xs text-gray-400 mb-1">Vista previa:</p>
+                    <img src="{{ $banner_url }}" alt="Banner" class="max-h-40 rounded-lg border border-gray-200 shadow">
+                </div>
+            @endif
+        </div>
+
         <!-- Información pública -->
         <div class="bg-white rounded-xl shadow p-6">
             <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">ℹ️ Texto de Información Pública</h2>

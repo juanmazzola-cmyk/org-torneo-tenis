@@ -103,6 +103,7 @@ class Bienvenida extends Component
         $clubNombre = Config::get('club_nombre', 'Club de Tenis');
         $clubCiudad = Config::get('club_ciudad', '');
         $panelInfo  = Config::get('panel_info', '');
+        $bannerUrl  = Config::get('banner_url', '');
 
         $torneos = $this->panel === ''
             ? Torneo::with([
@@ -281,7 +282,7 @@ class Bienvenida extends Component
         $misTorneosJugador = $misTorneosJugador ?? collect();
 
         return view('livewire.bienvenida', compact(
-            'torneos', 'clubNombre', 'clubCiudad', 'panelInfo',
+            'torneos', 'clubNombre', 'clubCiudad', 'panelInfo', 'bannerUrl',
             'categoriasData', 'categorias', 'torneosFinalizados',
             'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio', 'anos',
             'misAniosJugador', 'misTorneosJugador'
