@@ -197,21 +197,84 @@
 
         <!-- Listado inscripciones -->
         <div class="lg:col-span-3">
-            <div class="flex items-center justify-between mb-3">
-                <input type="text" wire:model.live.debounce.300ms="buscarJugador"
-                       class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-64"
-                       placeholder="Buscar por nombre...">
-                <button wire:click="exportarInscripciones"
-                        class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition text-sm font-medium">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
-                    Exportar Excel
-                </button>
-            </div>
 
-            <div class="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
+            @php
+                $telefonosLista = $inscripciones
+                    ->filter(fn($i) => !empty($i->jugador->telefono))
+                    ->map(fn($i) => $i->jugador)
+                    ->unique('id')
+                    ->pluck('telefono')
+                    ->join(', ');
+                $mensajePreparado = "¡Hola! Te invitamos a sumarte al torneo *{$torneo->nombre}* 🎾\n\nQuedan pocos cupos disponibles. ¡Reservá el tuyo!\n\nPara inscribirte o consultar, respondé este mensaje.\n\n👇 Banner del torneo:\nhttps://torneos.proyectosia.com.ar/images/banner-torneo.jpg";
+            @endphp
+
+            <div x-data="{ abierto: false, copiadoTels: false, copiadoMsj: false }">
+
+                <div class="flex items-center justify-between mb-3">
+                    <input type="text" wire:model.live.debounce.300ms="buscarJugador"
+                           class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 w-64"
+                           placeholder="Buscar por nombre...">
+                    <div class="flex gap-2">
+                        <button @click="abierto = !abierto"
+                                class="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition"
+                                :class="abierto ? 'bg-green-700 text-white border-green-700' : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100'">
+                            📲 <span x-text="abierto ? 'Cerrar envío masivo' : 'Preparar envío masivo'"></span>
+                        </button>
+                        <button wire:click="exportarInscripciones"
+                                class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition text-sm font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Exportar Excel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel envío masivo -->
+                <div x-show="abierto" x-transition.opacity class="bg-white rounded-xl shadow p-5 mb-4 border border-green-200">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-4">📲 Preparar envío masivo por WhatsApp</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                        <!-- Teléfonos -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                Números de teléfono
+                                <span class="text-gray-400 font-normal">(para lista de difusión)</span>
+                            </label>
+                            <textarea x-ref="tels" rows="5" readonly
+                                      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 resize-none focus:outline-none font-mono"
+                            >{{ $telefonosLista ?: '— Ningún jugador tiene teléfono cargado —' }}</textarea>
+                            <button
+                                @click="navigator.clipboard.writeText($refs.tels.value); copiadoTels = true; setTimeout(() => copiadoTels = false, 2000)"
+                                class="mt-2 w-full py-2 rounded-lg text-sm font-medium transition border"
+                                :class="copiadoTels ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                                <span x-show="!copiadoTels">Copiar números</span>
+                                <span x-show="copiadoTels">¡Copiado!</span>
+                            </button>
+                        </div>
+
+                        <!-- Mensaje -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">
+                                Mensaje listo para enviar
+                            </label>
+                            <textarea x-ref="msj" rows="5" readonly
+                                      class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 resize-none focus:outline-none"
+                            >{{ $mensajePreparado }}</textarea>
+                            <button
+                                @click="navigator.clipboard.writeText($refs.msj.value); copiadoMsj = true; setTimeout(() => copiadoMsj = false, 2000)"
+                                class="mt-2 w-full py-2 rounded-lg text-sm font-medium transition border"
+                                :class="copiadoMsj ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'">
+                                <span x-show="!copiadoMsj">Copiar mensaje</span>
+                                <span x-show="copiadoMsj">¡Copiado!</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow overflow-hidden overflow-x-auto">
                 <table class="w-full min-w-[580px]">
                     <thead class="bg-gray-50 border-b">
                         <tr>
@@ -268,6 +331,8 @@
                         @endforelse
                     </tbody>
                 </table>
+                </div>
+
             </div>
         </div>
     </div>
