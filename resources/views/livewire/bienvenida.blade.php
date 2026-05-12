@@ -587,11 +587,66 @@
 
     @endif
 
+    {{-- Banner PWA --}}
+    <div id="pwa-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:50; padding:12px 16px; pointer-events:none;">
+        <div class="max-w-2xl mx-auto bg-green-900/95 backdrop-blur border border-green-600/60 rounded-2xl shadow-2xl flex items-center gap-3 px-4 py-3" style="pointer-events:auto;">
+            <span class="text-2xl shrink-0">📲</span>
+            <div class="flex-1 min-w-0">
+                <p class="text-white font-bold text-sm">Instalá la app</p>
+                <p class="text-green-300 text-xs">Accedé rápido desde tu pantalla de inicio</p>
+            </div>
+            <button id="pwa-install-btn" class="bg-white text-green-900 font-bold text-sm px-4 py-2 rounded-lg shrink-0 hover:bg-green-50 transition">
+                Instalar
+            </button>
+            <button id="pwa-dismiss-btn" class="text-green-400 hover:text-white transition font-bold leading-none px-1 shrink-0 text-lg">
+                ✕
+            </button>
+        </div>
+    </div>
+
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', bindScrollHints);
 document.addEventListener('livewire:updated', bindScrollHints);
+
+// PWA install banner
+(function() {
+    var deferredPrompt = null;
+    var DISMISSED_KEY = 'pwa_banner_dismissed';
+
+    function showBanner() {
+        if (localStorage.getItem(DISMISSED_KEY)) return;
+        var b = document.getElementById('pwa-banner');
+        if (b) b.style.display = 'block';
+    }
+    function hideBanner() {
+        var b = document.getElementById('pwa-banner');
+        if (b) b.style.display = 'none';
+    }
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        showBanner();
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'pwa-install-btn' && deferredPrompt) {
+            hideBanner();
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+        }
+        if (e.target.id === 'pwa-dismiss-btn') {
+            hideBanner();
+            localStorage.setItem(DISMISSED_KEY, '1');
+        }
+    });
+
+    document.addEventListener('livewire:updated', function() {
+        if (deferredPrompt) showBanner();
+    });
+})();
 
 function bindScrollHints() {
     document.querySelectorAll('.scroll-table').forEach(function(table) {
