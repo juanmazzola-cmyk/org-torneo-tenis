@@ -570,6 +570,14 @@
                     </div>
                 </button>
                 @endif
+                <button id="pwa-install-inline" onclick="pwaBannerInstall()"
+                        style="display:none; grid-column:1/-1; background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.4); border-radius:0.75rem; padding:14px 16px; text-align:center; width:100%; flex-direction:row; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:background .15s">
+                    <span style="font-size:1.5rem">📲</span>
+                    <div style="text-align:left">
+                        <p class="text-white font-bold text-sm leading-tight">Instalá la app</p>
+                        <p style="color:rgba(167,243,208,0.85); font-size:.75rem; margin-top:2px">Accedé rápido desde tu pantalla de inicio</p>
+                    </div>
+                </button>
             </div>
 
 
@@ -619,11 +627,22 @@ document.addEventListener('livewire:updated', bindScrollHints);
         if (localStorage.getItem(DISMISSED_KEY)) return;
         var b = document.getElementById('pwa-banner');
         if (b) b.style.display = 'block';
+        var btn = document.getElementById('pwa-install-inline');
+        if (btn) btn.style.display = 'flex';
     }
     function hideBanner() {
         var b = document.getElementById('pwa-banner');
         if (b) b.style.display = 'none';
     }
+
+    window.pwaBannerInstall = function() {
+        if (!deferredPrompt) return;
+        hideBanner();
+        var btn = document.getElementById('pwa-install-inline');
+        if (btn) btn.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+    };
 
     window.addEventListener('beforeinstallprompt', function(e) {
         e.preventDefault();
@@ -633,9 +652,7 @@ document.addEventListener('livewire:updated', bindScrollHints);
 
     document.addEventListener('click', function(e) {
         if (e.target.id === 'pwa-install-btn' && deferredPrompt) {
-            hideBanner();
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function() { deferredPrompt = null; });
+            window.pwaBannerInstall();
         }
         if (e.target.id === 'pwa-dismiss-btn') {
             hideBanner();
