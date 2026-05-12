@@ -84,6 +84,20 @@ Claves actuales: `club_nombre`, `club_ciudad`, `club_telefono`, `puntos_campeon`
 
 La clave `banner_url` contiene una URL de imagen externa que se muestra en la pantalla pública debajo del nombre del club. El usuario sube la imagen directamente al servidor vía DonWeb (carpeta `public/banners/`) y pega la URL en Config. No hay upload desde la app — Livewire 4 tiene problemas con file uploads en este entorno.
 
+### PWA — instalación
+
+Archivos: `public/manifest.json`, `public/sw.js`, íconos `public/icon-192.png` y `public/icon-512.png`. El layout `resources/views/layouts/publica.blade.php` incluye el `<link rel="manifest">` y registra el service worker.
+
+El banner de instalación está en `resources/views/livewire/bienvenida.blade.php`:
+- **Banner flotante** (`#pwa-banner`): aparece en la parte inferior de la pantalla.
+- **Botón inline** (`#pwa-install-inline`): aparece en la grilla de botones de la pantalla principal.
+
+Ambos son `display:none` por defecto y se muestran **únicamente cuando Chrome dispara el evento `beforeinstallprompt`** (requiere HTTPS y que el browser considere que el usuario tiene suficiente engagement con el sitio). En local (HTTP/XAMPP) el evento nunca se dispara — es una limitación del browser, no del código.
+
+El usuario puede descartar el banner flotante con el botón ✕; la decisión se guarda en `localStorage` con la clave `pwa_banner_dismissed` y no vuelve a aparecer.
+
+Para probar el banner visualmente en local sin modificar código: abrir DevTools → Console y ejecutar `document.getElementById('pwa-banner').style.display='block'`.
+
 ### Livewire 4 — limitaciones conocidas
 
 - **File uploads**: Livewire 4 intercepta todos los eventos `submit` dentro del componente raíz, incluyendo formularios HTML nativos. Los uploads de archivos vía `WithFileUploads` y también vía controladores externos desde dentro de un componente Livewire son problemáticos en este entorno (XAMPP + Ferozo). Solución adoptada: el usuario sube imágenes directamente al servidor por FTP/panel de hosting y pega la URL en Config.
