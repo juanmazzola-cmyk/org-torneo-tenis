@@ -62,6 +62,11 @@ class Jugadores extends Component
         $this->resetPage();
     }
 
+    public function updatingFiltroCategoria(): void
+    {
+        $this->resetPage();
+    }
+
     public function guardar(): void
     {
         $this->validate();
