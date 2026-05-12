@@ -54,3 +54,19 @@ Routes are in `routes/web.php`. Admin routes use the `admin.auth` middleware ali
 ### Deploy
 
 Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` secret) which pulls and deploys on the hosting server.
+
+**IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
+
+### Config (clave-valor)
+
+El modelo `Config` (`app/Models/Config.php`) guarda configuración en la tabla `configs` como pares clave/valor, con cache de 1 hora (`Cache::remember('app_config', 3600, ...)`). `Config::set()` invalida el cache automáticamente.
+
+Claves actuales: `club_nombre`, `club_ciudad`, `club_telefono`, `puntos_campeon`, `puntos_subcampeon`, `puntos_semifinal`, `puntos_cuartos`, `puntos_octavos`, `puntos_16avos`, `puntos_32avos`, `admin_code`, `panel_info`, `banner_url`.
+
+La clave `banner_url` contiene una URL de imagen externa que se muestra en la pantalla pública debajo del nombre del club. El usuario sube la imagen directamente al servidor vía DonWeb (carpeta `public/banners/`) y pega la URL en Config. No hay upload desde la app — Livewire 4 tiene problemas con file uploads en este entorno.
+
+### Livewire 4 — limitaciones conocidas
+
+- **File uploads**: Livewire 4 intercepta todos los eventos `submit` dentro del componente raíz, incluyendo formularios HTML nativos. Los uploads de archivos vía `WithFileUploads` y también vía controladores externos desde dentro de un componente Livewire son problemáticos en este entorno (XAMPP + Ferozo). Solución adoptada: el usuario sube imágenes directamente al servidor por FTP/panel de hosting y pega la URL en Config.
+- **`Storage::url()`** genera URLs relativas (`/storage/...`) incorrectas en XAMPP con subcarpeta. Usar siempre `asset()` para archivos públicos locales.
+- El symlink `storage:link` no se ejecuta en el deploy de Ferozo (solo hace `git pull`).
