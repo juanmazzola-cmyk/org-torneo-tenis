@@ -57,6 +57,25 @@ Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` s
 
 **IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
 
+#### Acceso al servidor
+
+El servidor de Ferozo **no tiene terminal SSH disponible**. El acceso a archivos se hace vía **WinSCP** (FTP) o el Administrador de Archivos de DonWeb. No hay forma de correr comandos artisan ni git directamente en producción.
+
+La base de datos en producción es **MySQL** (no SQLite). Las credenciales están en el `.env` del servidor.
+
+#### Recuperación del deploy roto (git divergido)
+
+Si el deploy deja de funcionar con error "divergent branches" o similar, el procedimiento es:
+
+1. **Backup vía WinSCP**: copiar `.env`, descargar `public/banners/` (SQLite no aplica, usan MySQL)
+2. **Eliminar** la carpeta `/public_html/torneos/` completa
+3. **Re-integrar** desde DonWeb → Mi Sitio Web → GIT (eliminar repo existente, crear nuevo apuntando a `/public_html/torneos`, rama `main`)
+4. **Restaurar** el `.env` y las imágenes de `public/banners/` vía WinSCP
+
+#### Banner de imagen — caché del browser
+
+Al actualizar la imagen del banner, si el nombre del archivo no cambia el browser sirve la versión cacheada. Para forzar la actualización en todos los visitantes, renombrar el archivo (ej. `banner2.jpg`) y actualizar la URL en Config.
+
 ### Config (clave-valor)
 
 El modelo `Config` (`app/Models/Config.php`) guarda configuración en la tabla `configs` como pares clave/valor, con cache de 1 hora (`Cache::remember('app_config', 3600, ...)`). `Config::set()` invalida el cache automáticamente.
