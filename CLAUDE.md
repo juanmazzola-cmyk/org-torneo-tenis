@@ -57,6 +57,8 @@ Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` s
 
 **IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
 
+**IMPORTANTE — archivos subidos manualmente por WinSCP:** Si en algún momento se subió un archivo manualmente por WinSCP (porque el webhook no lo deployó), git en Ferozo lo ve como "cambio local" y bloquea el próximo `git pull` con el error `Your local changes would be overwritten by merge`. La solución es volver a subir esos mismos archivos por WinSCP con la versión más reciente del repo local — cuando el contenido coincide con el commit actual, git deja de verlos como modificados. Los archivos que históricamente han causado este problema: `app/Livewire/AdminAnalytics.php`, `resources/views/livewire/admin-analytics.blade.php`, `resources/views/livewire/bienvenida.blade.php`.
+
 #### Acceso al servidor
 
 El servidor de Ferozo **no tiene terminal SSH disponible**. El acceso a archivos se hace vía **WinSCP** (FTP) o el Administrador de Archivos de DonWeb. No hay forma de correr comandos artisan ni git directamente en producción.
@@ -82,6 +84,8 @@ El modelo `Config` (`app/Models/Config.php`) guarda configuración en la tabla `
 
 Claves actuales: `club_nombre`, `club_ciudad`, `club_telefono`, `puntos_campeon`, `puntos_subcampeon`, `puntos_semifinal`, `puntos_cuartos`, `puntos_octavos`, `puntos_16avos`, `puntos_32avos`, `admin_code`, `panel_info`, `banner_url`.
 
+La clave `panel_info` se muestra **siempre visible** en la pantalla pública principal (debajo del banner), con fondo vidrio esmerilado y título "ℹ️ Información". No requiere que el usuario haga click para verla.
+
 La clave `banner_url` contiene una URL de imagen externa que se muestra en la pantalla pública debajo del nombre del club. El usuario sube la imagen directamente al servidor vía DonWeb (carpeta `public/banners/`) y pega la URL en Config. No hay upload desde la app — Livewire 4 tiene problemas con file uploads en este entorno.
 
 ### PWA — instalación
@@ -97,6 +101,20 @@ Ambos son `display:none` por defecto y se muestran **únicamente cuando Chrome d
 El usuario puede descartar el banner flotante con el botón ✕; la decisión se guarda en `localStorage` con la clave `pwa_banner_dismissed` y no vuelve a aparecer.
 
 Para probar el banner visualmente en local sin modificar código: abrir DevTools → Console y ejecutar `document.getElementById('pwa-banner').style.display='block'`.
+
+### Google Analytics 4
+
+El snippet de GA4 (propiedad `G-40QFQ0JL8K`) está incluido en **ambos layouts**:
+- `resources/views/layouts/app.blade.php` (panel admin)
+- `resources/views/layouts/publica.blade.php` (panel público)
+
+#### Sección Analytics en el panel admin
+
+Ruta: `/admin/analytics` (protegida por `admin.auth`), componente `app/Livewire/AdminAnalytics.php`.
+
+Muestra un embed de **Looker Studio** con 3 scorecards: visitas hoy, este mes, este año. El reporte está conectado a la propiedad GA4 `G-40QFQ0JL8K` y se actualiza cada ~15 minutos.
+
+**Por qué Looker Studio y no la GA4 Data API directa:** se intentó usar la GA4 Data API con una service account (`analytics-torneos@torneos-tenis-mercedes.iam.gserviceaccount.com`), pero GA4 no acepta service accounts como usuarios vía UI, y el GCP project link no estaba disponible en el plan. Looker Studio no requiere service account.
 
 ### Livewire 4 — limitaciones conocidas
 
