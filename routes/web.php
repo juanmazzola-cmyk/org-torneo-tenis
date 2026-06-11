@@ -16,6 +16,7 @@ use App\Livewire\MasterDetalle;
 use App\Livewire\MasterPublico;
 use App\Livewire\RankingLista;
 use App\Livewire\Configuracion;
+use App\Livewire\AdminAnalytics;
 use App\Livewire\MensajeWhatsapp;
 use App\Models\Draw;
 use App\Models\Master;
@@ -46,6 +47,7 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/ranking',        RankingLista::class)->name('ranking');
     Route::get('/config',         Configuracion::class)->name('config');
     Route::get('/whatsapp',       MensajeWhatsapp::class)->name('whatsapp');
+    Route::get('/admin/analytics', AdminAnalytics::class)->name('analytics');
 
     Route::get('/torneos/{torneo}',                 TorneoDetalle::class)->name('torneo.detalle');
     Route::get('/torneos/{torneo}/draw/{draw}',     DrawBracket::class)->name('torneo.draw');

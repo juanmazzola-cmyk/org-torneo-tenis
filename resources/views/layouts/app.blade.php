@@ -75,6 +75,11 @@
                        onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('whatsapp') ? '#16a34a' : 'transparent' }}'">
                         WhatsApp
                     </a>
+                    <a href="{{ route('analytics') }}"
+                       style="padding:8px 12px; border-radius:6px; color:white; text-decoration:none; font-size:.9rem; {{ request()->routeIs('analytics') ? 'background:#16a34a;font-weight:700' : '' }}"
+                       onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='{{ request()->routeIs('analytics') ? '#16a34a' : 'transparent' }}'">
+                        Analytics
+                    </a>
                     <div style="width:1px; height:24px; background:#4ade80; margin:0 6px"></div>
                     <form method="POST" action="{{ route('admin.logout') }}" style="margin:0">
                         @csrf
@@ -105,6 +110,7 @@
                 <a href="{{ route('ranking') }}" class="nav-link {{ request()->routeIs('ranking') ? 'active' : '' }}">📊 Ranking</a>
                 <a href="{{ route('config') }}" class="nav-link {{ request()->routeIs('config') ? 'active' : '' }}">⚙️ Config</a>
                 <a href="{{ route('whatsapp') }}" class="nav-link {{ request()->routeIs('whatsapp') ? 'active' : '' }}">💬 WhatsApp</a>
+                <a href="{{ route('analytics') }}" class="nav-link {{ request()->routeIs('analytics') ? 'active' : '' }}">📈 Analytics</a>
                 <div style="border-top:1px solid #4ade80; margin:8px 0 4px"></div>
                 <form method="POST" action="{{ route('admin.logout') }}" style="margin:0">
                     @csrf
