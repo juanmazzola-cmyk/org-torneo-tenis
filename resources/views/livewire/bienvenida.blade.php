@@ -450,9 +450,9 @@
 
     @if($panelInfo)
     <div class="max-w-2xl mx-auto w-full px-3 mb-4">
-        <div class="bg-yellow-400/10 border border-yellow-400/30 rounded-2xl px-5 py-4">
+        <div class="bg-white/10 backdrop-blur-sm border border-white/25 rounded-2xl px-5 py-4 shadow-2xl">
             <p class="text-yellow-300 font-bold text-sm uppercase tracking-widest mb-2">ℹ️ Información</p>
-            <div class="text-yellow-200 text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
+            <div class="text-white text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
         </div>
     </div>
     @endif
