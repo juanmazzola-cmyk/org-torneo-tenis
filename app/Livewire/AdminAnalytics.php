@@ -2,13 +2,8 @@
 
 namespace App\Livewire;
 
-use Google\Analytics\Data\V1beta\BetaAnalyticsDataClient;
-use Google\Analytics\Data\V1beta\DateRange;
-use Google\Analytics\Data\V1beta\Dimension;
-use Google\Analytics\Data\V1beta\Metric;
-use Google\Analytics\Data\V1beta\OrderBy;
-use Google\Analytics\Data\V1beta\OrderBy\MetricOrderBy;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 
 class AdminAnalytics extends Component
@@ -20,6 +15,8 @@ class AdminAnalytics extends Component
     public array $topPaginas = [];
     public ?string $error = null;
 
+    private string $propertyId = '541293754';
+
     public function mount(): void
     {
         $this->cargarDatos();
@@ -27,72 +24,102 @@ class AdminAnalytics extends Component
 
     public function refrescar(): void
     {
+        Cache::forget('analytics_token');
         Cache::forget('analytics_realtime');
         Cache::forget('analytics_data');
         $this->error = null;
         $this->cargarDatos();
     }
 
+    private function b64url(string $data): string
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+
+    private function getAccessToken(): string
+    {
+        return Cache::remember('analytics_token', 3500, function () {
+            $creds = json_decode(
+                file_get_contents(storage_path('app/analytics-credentials.json')),
+                true
+            );
+
+            $now     = time();
+            $header  = $this->b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+            $payload = $this->b64url(json_encode([
+                'iss'   => $creds['client_email'],
+                'scope' => 'https://www.googleapis.com/auth/analytics.readonly',
+                'aud'   => 'https://oauth2.googleapis.com/token',
+                'exp'   => $now + 3600,
+                'iat'   => $now,
+            ]));
+
+            $toSign = $header . '.' . $payload;
+            openssl_sign($toSign, $signature, $creds['private_key'], 'SHA256');
+
+            $jwt = $toSign . '.' . $this->b64url($signature);
+
+            $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion'  => $jwt,
+            ]);
+
+            return $response->json('access_token');
+        });
+    }
+
     private function cargarDatos(): void
     {
         try {
-            $property    = 'properties/541293754';
-            $credentials = storage_path('app/analytics-credentials.json');
-
-            $client = new BetaAnalyticsDataClient([
-                'credentials' => $credentials,
-                'transport'   => 'rest',
-            ]);
+            $token   = $this->getAccessToken();
+            $baseUrl = "https://analyticsdata.googleapis.com/v1beta/properties/{$this->propertyId}";
 
             // Usuarios activos en tiempo real (cache 1 min)
-            $this->activeUsers = Cache::remember('analytics_realtime', 60, function () use ($client, $property) {
-                $rt = $client->runRealtimeReport([
-                    'property' => $property,
-                    'metrics'  => [new Metric(['name' => 'activeUsers'])],
-                ]);
-                return $rt->getRowCount() > 0
-                    ? (int) $rt->getRows()[0]->getMetricValues()[0]->getValue()
-                    : 0;
+            $this->activeUsers = Cache::remember('analytics_realtime', 60, function () use ($token, $baseUrl) {
+                $rt = Http::withToken($token)
+                    ->post("{$baseUrl}:runRealtimeReport", [
+                        'metrics' => [['name' => 'activeUsers']],
+                    ])->json();
+
+                return (int) ($rt['rows'][0]['metricValues'][0]['value'] ?? 0);
             });
 
             // Sesiones por período + top páginas (cache 10 min)
-            $data = Cache::remember('analytics_data', 600, function () use ($client, $property) {
-                $sessionsResponse = $client->runReport([
-                    'property'    => $property,
-                    'date_ranges' => [
-                        new DateRange(['start_date' => 'today',      'end_date' => 'today',   'name' => 'hoy']),
-                        new DateRange(['start_date' => '7daysAgo',   'end_date' => 'today',   'name' => '7dias']),
-                        new DateRange(['start_date' => '30daysAgo',  'end_date' => 'today',   'name' => '30dias']),
-                    ],
-                    'dimensions' => [new Dimension(['name' => 'dateRange'])],
-                    'metrics'    => [new Metric(['name' => 'sessions'])],
-                ]);
+            $data = Cache::remember('analytics_data', 600, function () use ($token, $baseUrl) {
+
+                $sessions = Http::withToken($token)
+                    ->post("{$baseUrl}:runReport", [
+                        'dateRanges' => [
+                            ['startDate' => 'today',     'endDate' => 'today', 'name' => 'hoy'],
+                            ['startDate' => '7daysAgo',  'endDate' => 'today', 'name' => '7dias'],
+                            ['startDate' => '30daysAgo', 'endDate' => 'today', 'name' => '30dias'],
+                        ],
+                        'dimensions' => [['name' => 'dateRange']],
+                        'metrics'    => [['name' => 'sessions']],
+                    ])->json();
 
                 $visitas = ['hoy' => 0, '7dias' => 0, '30dias' => 0];
-                foreach ($sessionsResponse->getRows() as $row) {
-                    $range = $row->getDimensionValues()[0]->getValue();
+                foreach ($sessions['rows'] ?? [] as $row) {
+                    $range = $row['dimensionValues'][0]['value'];
                     if (array_key_exists($range, $visitas)) {
-                        $visitas[$range] = (int) $row->getMetricValues()[0]->getValue();
+                        $visitas[$range] = (int) $row['metricValues'][0]['value'];
                     }
                 }
 
-                $pagesResponse = $client->runReport([
-                    'property'    => $property,
-                    'date_ranges' => [new DateRange(['start_date' => '30daysAgo', 'end_date' => 'today'])],
-                    'dimensions'  => [new Dimension(['name' => 'pagePath'])],
-                    'metrics'     => [new Metric(['name' => 'screenPageViews'])],
-                    'order_bys'   => [new OrderBy([
-                        'metric' => new MetricOrderBy(['metric_name' => 'screenPageViews']),
-                        'desc'   => true,
-                    ])],
-                    'limit' => 5,
-                ]);
+                $pages = Http::withToken($token)
+                    ->post("{$baseUrl}:runReport", [
+                        'dateRanges' => [['startDate' => '30daysAgo', 'endDate' => 'today']],
+                        'dimensions' => [['name' => 'pagePath']],
+                        'metrics'    => [['name' => 'screenPageViews']],
+                        'orderBys'   => [['metric' => ['metricName' => 'screenPageViews'], 'desc' => true]],
+                        'limit'      => 5,
+                    ])->json();
 
                 $topPaginas = [];
-                foreach ($pagesResponse->getRows() as $row) {
+                foreach ($pages['rows'] ?? [] as $row) {
                     $topPaginas[] = [
-                        'pagina' => $row->getDimensionValues()[0]->getValue(),
-                        'vistas' => (int) $row->getMetricValues()[0]->getValue(),
+                        'pagina' => $row['dimensionValues'][0]['value'],
+                        'vistas' => (int) $row['metricValues'][0]['value'],
                     ];
                 }
 
