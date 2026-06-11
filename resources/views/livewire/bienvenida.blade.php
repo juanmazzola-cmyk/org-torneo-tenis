@@ -448,6 +448,14 @@
     </div>
     @endif
 
+    @if($panelInfo)
+    <div class="max-w-2xl mx-auto w-full px-3 mb-4">
+        <div class="bg-yellow-400/10 border border-yellow-400/30 rounded-2xl px-5 py-4">
+            <div class="text-yellow-200 text-sm leading-relaxed whitespace-pre-wrap">{{ $panelInfo }}</div>
+        </div>
+    </div>
+    @endif
+
     <div class="max-w-2xl mx-auto w-full px-3 pb-8">
         <div class="bg-white/10 backdrop-blur-sm border border-white/25 rounded-2xl overflow-hidden shadow-2xl">
 
@@ -560,16 +568,6 @@
                         <p style="color:rgba(147,197,253,0.85); font-size:.75rem; margin-top:2px">Seguí tu estadística personal</p>
                     </div>
                 </button>
-                @if($panelInfo)
-                <button wire:click="abrirInfo"
-                        style="grid-column:1/-1; background:rgba(251,191,36,0.12); border:1px solid rgba(252,211,77,0.35); border-radius:0.75rem; padding:18px 16px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
-                    <span style="font-size:2.25rem">ℹ️</span>
-                    <div>
-                        <p class="text-white font-bold text-sm leading-tight">Información</p>
-                        <p style="color:rgba(253,230,138,0.85); font-size:.75rem; margin-top:2px">Novedades y avisos</p>
-                    </div>
-                </button>
-                @endif
                 <button id="pwa-install-inline" onclick="pwaBannerInstall()"
                         style="display:none; grid-column:1/-1; background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.4); border-radius:0.75rem; padding:14px 16px; text-align:center; width:100%; flex-direction:row; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:background .15s">
                     <span style="font-size:1.5rem">📲</span>
