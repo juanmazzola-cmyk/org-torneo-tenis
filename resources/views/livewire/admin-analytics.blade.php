@@ -11,18 +11,10 @@
 
     @if ($error)
         <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:8px; padding:16px; color:#dc2626; margin-bottom:20px; font-size:.9rem">
-            <strong>Error:</strong> {{ $error }}
+            <strong>Error al conectar con Google Analytics:</strong><br>
+            {{ $error }}
         </div>
-    @endif
-
-    @if (count($debug))
-        <div style="background:#1e1e1e; color:#d4d4d4; border-radius:8px; padding:16px; margin-bottom:20px; font-family:monospace; font-size:.8rem; white-space:pre-wrap; overflow-x:auto">
-            <strong style="color:#9cdcfe">DEBUG</strong>
-{{ json_encode($debug, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}
-        </div>
-    @endif
-
-    @if (!$error)
+    @else
 
         {{-- Tarjetas de métricas --}}
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-bottom:28px">
