@@ -16,6 +16,8 @@
 # /public/build — incluido en repo porque Ferozo no tiene Node.js
 /public/hot
 /public/storage
+/public/images/*
+!/public/images/.gitkeep
 /storage/*.key
 /storage/pail
 /vendor

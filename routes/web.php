@@ -18,6 +18,7 @@ use App\Livewire\RankingLista;
 use App\Livewire\Configuracion;
 use App\Livewire\AdminAnalytics;
 use App\Livewire\MensajeWhatsapp;
+use App\Http\Controllers\BannerUploadController;
 use App\Models\Draw;
 use App\Models\Master;
 use App\Models\Partido;
@@ -46,6 +47,7 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/torneos',        Torneos::class)->name('torneos');
     Route::get('/ranking',        RankingLista::class)->name('ranking');
     Route::get('/config',         Configuracion::class)->name('config');
+    Route::post('/admin/banner-upload', [BannerUploadController::class, 'upload'])->name('banner.upload');
     Route::get('/whatsapp',       MensajeWhatsapp::class)->name('whatsapp');
     Route::get('/admin/analytics', AdminAnalytics::class)->name('analytics');
 

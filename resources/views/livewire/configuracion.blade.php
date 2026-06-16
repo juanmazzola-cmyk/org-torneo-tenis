@@ -8,8 +8,64 @@
             {{ session('ok') }}
         </div>
     @endif
+    @if(session('banner_ok'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {{ session('banner_ok') }}
+        </div>
+    @endif
+    @if(session('banner_error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {{ session('banner_error') }}
+        </div>
+    @endif
 
-    <form wire:submit="guardar" class="space-y-6 max-w-2xl">
+    <div class="space-y-6 max-w-2xl">
+
+        <!-- Subir imagen del banner (form propio, fuera del form Livewire) -->
+        <div class="bg-white rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">🖼️ Subir imagen del banner</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Seleccioná una imagen desde tu PC (JPG, PNG o WebP, máx. 2 MB).
+                Se guardará en el servidor y reemplazará el banner anterior automáticamente.
+            </p>
+
+            <form action="{{ route('banner.upload') }}" method="POST" enctype="multipart/form-data"
+                  class="flex flex-wrap items-center gap-3">
+                @csrf
+                <input type="file" name="banner" accept="image/jpeg,image/png,image/webp"
+                       class="block text-sm text-gray-500
+                              file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0
+                              file:text-sm file:font-medium file:bg-green-50 file:text-green-700
+                              hover:file:bg-green-100 cursor-pointer">
+                <button type="submit"
+                        class="bg-green-700 text-white px-5 py-2 rounded-lg hover:bg-green-800 transition text-sm font-medium whitespace-nowrap">
+                    Subir imagen
+                </button>
+            </form>
+
+            @if($banner_url)
+                <div class="mt-5">
+                    <p class="text-xs text-gray-400 mb-2">Imagen actual:</p>
+                    <img src="{{ $banner_url }}" alt="Banner actual"
+                         class="max-h-40 rounded-lg border border-gray-200 shadow mb-4">
+
+                    <p class="text-xs text-gray-400 mb-1">URL pública (para copiar y pegar en WhatsApp):</p>
+                    <div class="flex items-center gap-2">
+                        <input type="text" readonly value="{{ $banner_url }}"
+                               class="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono bg-gray-50 text-gray-600 truncate">
+                        <button type="button"
+                                onclick="navigator.clipboard.writeText('{{ $banner_url }}'); this.textContent='✓ Copiado'; setTimeout(() => this.textContent='Copiar', 2000)"
+                                class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-3 py-2 rounded-lg transition whitespace-nowrap">
+                            Copiar
+                        </button>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+    </div>
+
+    <form wire:submit="guardar" class="space-y-6 max-w-2xl mt-6">
 
         <!-- Datos del Club -->
         <div class="bg-white rounded-xl shadow p-6">
@@ -101,23 +157,18 @@
             </div>
         </div>
 
-        <!-- Banner publicitario -->
+        <!-- URL del banner (manual) -->
         <div class="bg-white rounded-xl shadow p-6">
-            <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">🖼️ Banner publicitario</h2>
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 border-b pb-2">🔗 URL del banner (manual)</h2>
             <p class="text-sm text-gray-500 mb-4">
-                Pegá la URL de una imagen alojada en DonWeb u otro servidor. Aparecerá en la pantalla pública debajo del nombre del club.
-                Si lo dejás vacío, no se muestra nada.
+                Si la imagen está alojada en otro servidor, pegá la URL directamente acá.
+                Cuando subís desde arriba, este campo se actualiza solo.
+                Si lo dejás vacío, no se muestra banner.
             </p>
             <input type="text" wire:model="banner_url"
                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 font-mono"
                    placeholder="https://tusitio.com/banners/torneo-invierno.jpg">
             @error('banner_url') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-            @if($banner_url)
-                <div class="mt-3">
-                    <p class="text-xs text-gray-400 mb-1">Vista previa:</p>
-                    <img src="{{ $banner_url }}" alt="Banner" class="max-h-40 rounded-lg border border-gray-200 shadow">
-                </div>
-            @endif
         </div>
 
         <!-- Información pública -->
