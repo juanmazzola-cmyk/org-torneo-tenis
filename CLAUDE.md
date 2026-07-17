@@ -9,6 +9,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 composer run-script setup
 
 # Start dev server (Laravel + queue + logs + Vite hot reload concurrently)
+# NOTA: en Windows esto falla — `php artisan pail` requiere la extensión `pcntl`,
+# que no existe en PHP para Windows, y `concurrently --kill-others` mata todos los
+# demás procesos (server, queue, vite) cuando pail crashea. En Windows usar en su
+# lugar `php artisan serve` solo (elegir un puerto libre si el 8000 ya está en uso
+# por otro proyecto local).
 composer run dev
 
 # Run tests (clears config cache first)
@@ -57,7 +62,11 @@ Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` s
 
 **IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
 
-**IMPORTANTE — archivos subidos manualmente por WinSCP:** Si en algún momento se subió un archivo manualmente por WinSCP (porque el webhook no lo deployó), git en Ferozo lo ve como "cambio local" y bloquea el próximo `git pull` con el error `Your local changes would be overwritten by merge`. La solución es volver a subir esos mismos archivos por WinSCP con la versión más reciente del repo local — cuando el contenido coincide con el commit actual, git deja de verlos como modificados. Los archivos que históricamente han causado este problema: `app/Livewire/AdminAnalytics.php`, `resources/views/livewire/admin-analytics.blade.php`, `resources/views/livewire/bienvenida.blade.php`.
+**IMPORTANTE — archivos subidos manualmente por WinSCP:** Si en algún momento se subió un archivo manualmente por WinSCP (porque el webhook no lo deployó), git en Ferozo lo ve como "cambio local" y bloquea el próximo `git pull` con el error `Your local changes would be overwritten by merge`. Los archivos que históricamente han causado este problema: `app/Livewire/AdminAnalytics.php`, `resources/views/livewire/admin-analytics.blade.php`, `resources/views/livewire/bienvenida.blade.php`, `resources/views/livewire/configuracion.blade.php`, `routes/web.php`, `app/Http/Controllers/BannerUploadController.php` (untracked).
+
+**OJO — volver a subir la versión "actual" por WinSCP NO alcanza si el HEAD del servidor quedó atrasado varios commits.** El error de git compara el archivo en disco contra el commit en el que está parado el HEAD del servidor, no contra el último commit de `origin/main`. Si el HEAD del servidor quedó viejo (ej. atascado en un commit de hace varias features), subir la versión más nueva de un archivo sigue marcándolo como "modificado" para siempre, porque nunca va a coincidir con lo que git espera ahí. En ese caso la única solución real es la recuperación completa de más abajo (borrar la carpeta y re-clonar), no seguir subiendo archivos a mano.
+
+**Estado conocido (2026-07-17):** el deploy automático quedó roto — el HEAD de git en el servidor está clavado en el commit `43e458e` (viejo) y todo `git pull` posterior aborta con el error de arriba. Mientras esto no se resuelva con la recuperación completa, los pushes a `main` NO se reflejan solos en producción — hay que subir los archivos cambiados a mano por WinSCP después de cada push. El sitio en sí sigue funcionando bien (los archivos ya en disco no se tocan cuando el pull aborta), solo el pipeline automático está roto.
 
 #### Acceso al servidor
 
@@ -86,7 +95,18 @@ Claves actuales: `club_nombre`, `club_ciudad`, `club_telefono`, `puntos_campeon`
 
 La clave `panel_info` se muestra **siempre visible** en la pantalla pública principal (debajo del banner), con fondo vidrio esmerilado y título "ℹ️ Información". No requiere que el usuario haga click para verla.
 
-La clave `banner_url` contiene una URL de imagen externa que se muestra en la pantalla pública debajo del nombre del club. El usuario sube la imagen directamente al servidor vía DonWeb (carpeta `public/banners/`) y pega la URL en Config. No hay upload desde la app — Livewire 4 tiene problemas con file uploads en este entorno.
+La clave `banner_url` contiene la URL de la imagen de banner que se muestra en la pantalla pública debajo del nombre del club. Se actualiza automáticamente al subir una imagen desde el panel Config (ver abajo). También se puede editar manualmente para apuntar a una URL externa.
+
+#### Upload de banner desde el panel admin
+
+Ruta: `POST /admin/banner-upload` (protegida por `admin.auth`), controlador `app/Http/Controllers/BannerUploadController.php`.
+
+- Guarda la imagen en `public/images/banner-torneo.{ext}` usando `move()` directamente (sin Storage ni symlinks).
+- Elimina el banner anterior con `glob()` + `unlink()` antes de guardar el nuevo.
+- Actualiza `Config::set('banner_url', ...)` con `asset()` + `?v=timestamp` para romper caché de browser.
+- El directorio `public/images/` está en el repo con un `.gitkeep`; su contenido está ignorado en `.gitignore`.
+
+**Por qué el form de upload está fuera del `<form wire:submit>`:** Livewire 4 intercepta todos los `submit` del form raíz. Anidar un `<form enctype="multipart/form-data">` dentro rompe el upload. La solución es tener ambos forms como elementos hermanos en el blade, no anidados.
 
 ### PWA — instalación
 
@@ -118,6 +138,6 @@ Muestra un embed de **Looker Studio** con 3 scorecards: visitas hoy, este mes, e
 
 ### Livewire 4 — limitaciones conocidas
 
-- **File uploads**: Livewire 4 intercepta todos los eventos `submit` dentro del componente raíz, incluyendo formularios HTML nativos. Los uploads de archivos vía `WithFileUploads` y también vía controladores externos desde dentro de un componente Livewire son problemáticos en este entorno (XAMPP + Ferozo). Solución adoptada: el usuario sube imágenes directamente al servidor por FTP/panel de hosting y pega la URL en Config.
+- **File uploads**: Livewire 4 intercepta todos los eventos `submit` dentro del componente raíz, incluyendo formularios HTML nativos. Los uploads de archivos vía `WithFileUploads` y también vía controladores externos desde dentro de un componente Livewire son problemáticos en este entorno (XAMPP + Ferozo). Solución adoptada: usar un controlador Laravel clásico con un `<form>` HTML independiente (hermano, no anidado) respecto al `<form wire:submit>`. Ver `BannerUploadController` como referencia.
 - **`Storage::url()`** genera URLs relativas (`/storage/...`) incorrectas en XAMPP con subcarpeta. Usar siempre `asset()` para archivos públicos locales.
 - El symlink `storage:link` no se ejecuta en el deploy de Ferozo (solo hace `git pull`).
