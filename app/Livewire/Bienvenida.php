@@ -4,7 +4,6 @@ namespace App\Livewire;
 
 use App\Models\Categoria;
 use App\Models\Config;
-use App\Models\GaleriaFoto;
 use App\Models\Jugador;
 use App\Models\MasterFinal;
 use App\Models\MasterPartido;
@@ -59,11 +58,6 @@ class Bienvenida extends Component
     public function abrirInfo(): void
     {
         $this->panel = 'info';
-    }
-
-    public function abrirGaleria(): void
-    {
-        $this->panel = 'galeria';
     }
 
     public function cerrar(): void
@@ -287,15 +281,11 @@ class Bienvenida extends Component
         $misAniosJugador   = $misAniosJugador   ?? collect();
         $misTorneosJugador = $misTorneosJugador ?? collect();
 
-        $fotosGaleria = $this->panel === 'galeria'
-            ? GaleriaFoto::orderBy('orden')->orderBy('created_at')->get()
-            : collect();
-
         return view('livewire.bienvenida', compact(
             'torneos', 'clubNombre', 'clubCiudad', 'panelInfo', 'bannerUrl',
             'categoriasData', 'categorias', 'torneosFinalizados',
             'jugadores', 'jugadorSeleccionado', 'misPartidosPorAnio', 'anos',
-            'misAniosJugador', 'misTorneosJugador', 'fotosGaleria'
+            'misAniosJugador', 'misTorneosJugador'
         ))->layout('layouts.publica');
     }
 }
