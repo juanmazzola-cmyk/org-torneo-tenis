@@ -18,6 +18,9 @@
 /public/storage
 /public/images/*
 !/public/images/.gitkeep
+!/public/images/galeria
+/public/images/galeria/*
+!/public/images/galeria/.gitkeep
 /storage/*.key
 /storage/pail
 /vendor
