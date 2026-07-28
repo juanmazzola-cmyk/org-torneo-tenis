@@ -454,7 +454,7 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                         <template x-for="(foto, i) in fotos" :key="i">
                             <button type="button" @click="abrir(i)"
-                                    class="aspect-square overflow-hidden rounded-xl shadow-lg">
+                                    class="aspect-[4/5] overflow-hidden rounded-xl shadow-lg">
                                 <img :src="foto.url" :alt="foto.descripcion" loading="lazy"
                                      class="w-full h-full object-cover hover:opacity-90 transition">
                             </button>
