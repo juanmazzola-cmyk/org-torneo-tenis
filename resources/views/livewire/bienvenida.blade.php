@@ -423,59 +423,75 @@
     ═══════════════════════════════════════════════════════ --}}
     @elseif($panel === 'galeria')
 
-    <div class="flex flex-col min-h-screen">
-        <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
-            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-                <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
-                <h1 class="text-white font-bold text-lg">📷 Galería de Fotos</h1>
+    <div x-data="{
+            fotos: {{ Js::from($fotosGaleria->map(fn($f) => ['url' => $f->url, 'descripcion' => $f->descripcion ?? ''])->values()) }},
+            open: false,
+            index: 0,
+            abrir(i) { this.index = i; this.open = true; },
+            cerrar() { this.open = false; },
+            anterior() { this.index = (this.index - 1 + this.fotos.length) % this.fotos.length; },
+            siguiente() { this.index = (this.index + 1) % this.fotos.length; },
+         }"
+         @keydown.escape.window="cerrar()"
+         @keydown.arrow-left.window="open && anterior()"
+         @keydown.arrow-right.window="open && siguiente()">
+
+        <div class="flex flex-col min-h-screen">
+            <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
+                <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                    <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                    <h1 class="text-white font-bold text-lg">📷 Galería de Fotos</h1>
+                </div>
+            </div>
+
+            <div class="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+                @if($fotosGaleria->isEmpty())
+                    <div class="bg-white/10 rounded-2xl p-10 text-center text-green-200">
+                        Todavía no hay fotos en la galería.
+                    </div>
+                @else
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        <template x-for="(foto, i) in fotos" :key="i">
+                            <button type="button" @click="abrir(i)"
+                                    class="aspect-square overflow-hidden rounded-xl shadow-lg">
+                                <img :src="foto.url" :alt="foto.descripcion" loading="lazy"
+                                     class="w-full h-full object-cover hover:opacity-90 transition">
+                            </button>
+                        </template>
+                    </div>
+                @endif
             </div>
         </div>
 
-        <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
-            @if($fotosGaleria->isEmpty())
-                <div class="bg-white/10 rounded-2xl p-10 text-center text-green-200">
-                    Todavía no hay fotos en la galería.
-                </div>
-            @else
-                <div class="columns-2 sm:columns-3 gap-2 space-y-2">
-                    @foreach($fotosGaleria as $foto)
-                        <div class="break-inside-avoid">
-                            <img src="{{ $foto->url }}"
-                                 alt="{{ $foto->descripcion }}"
-                                 loading="lazy"
-                                 onclick="abrirLightbox('{{ $foto->url }}', {{ Js::from($foto->descripcion ?? '') }})"
-                                 class="w-full rounded-xl shadow-lg cursor-pointer hover:opacity-90 transition">
-                        </div>
-                    @endforeach
-                </div>
-            @endif
+        {{-- Lightbox --}}
+        <div x-show="open"
+             class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+             style="background:rgba(0,0,0,0.9)"
+             @click.self="cerrar()">
+
+            <button @click="cerrar()" type="button"
+                    style="position:absolute; top:16px; right:20px; color:white; font-size:2rem; line-height:1; background:transparent; border:none; cursor:pointer; z-index:2;">
+                ✕
+            </button>
+
+            <button x-show="fotos.length > 1" @click.stop="anterior()" type="button"
+                    style="position:absolute; left:4px; top:50%; transform:translateY(-50%); color:white; font-size:2.5rem; line-height:1; background:transparent; border:none; cursor:pointer; padding:14px; z-index:2;">
+                ‹
+            </button>
+            <button x-show="fotos.length > 1" @click.stop="siguiente()" type="button"
+                    style="position:absolute; right:4px; top:50%; transform:translateY(-50%); color:white; font-size:2.5rem; line-height:1; background:transparent; border:none; cursor:pointer; padding:14px; z-index:2;">
+                ›
+            </button>
+
+            <div style="max-width:100%; max-height:100%; text-align:center;" @click.stop>
+                <template x-if="fotos.length">
+                    <img :src="fotos[index].url" :alt="fotos[index].descripcion"
+                         style="max-width:100%; max-height:80vh; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.6);">
+                </template>
+                <p x-show="fotos.length && fotos[index].descripcion" x-text="fotos[index] ? fotos[index].descripcion : ''" class="text-white text-sm mt-3"></p>
+            </div>
         </div>
     </div>
-
-    {{-- Lightbox --}}
-    <div id="lightbox-galeria" onclick="cerrarLightbox()"
-         style="display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; padding:20px; cursor:zoom-out;">
-        <button onclick="cerrarLightbox()" type="button"
-                style="position:absolute; top:16px; right:20px; color:white; font-size:2rem; line-height:1; background:transparent; border:none; cursor:pointer;">
-            ✕
-        </button>
-        <div style="max-width:100%; max-height:100%; text-align:center;" onclick="event.stopPropagation()">
-            <img id="lightbox-galeria-img" src="" alt="" style="max-width:100%; max-height:80vh; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.6);">
-            <p id="lightbox-galeria-desc" class="text-white text-sm mt-3"></p>
-        </div>
-    </div>
-
-    <script>
-        function abrirLightbox(src, desc) {
-            document.getElementById('lightbox-galeria-img').src = src;
-            document.getElementById('lightbox-galeria-desc').textContent = desc || '';
-            document.getElementById('lightbox-galeria').style.display = 'flex';
-        }
-        function cerrarLightbox() {
-            document.getElementById('lightbox-galeria').style.display = 'none';
-            document.getElementById('lightbox-galeria-img').src = '';
-        }
-    </script>
 
     {{-- ═══════════════════════════════════════════════════════
          PANTALLA PRINCIPAL
