@@ -60,6 +60,8 @@ Routes are in `routes/web.php`. Admin routes use the `admin.auth` middleware ali
 
 Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` secret) which pulls and deploys on the hosting server.
 
+**IMPORTANTE:** Ferozo no tiene Node.js, así que **cualquier clase de Tailwind nueva (no solo las ya usadas antes en el proyecto) necesita `npm run build` antes de commitear**, o simplemente no existe en producción — el sitio sirve el CSS ya compilado en `public/build`, no lo genera al vuelo. Un layout roto/sin estilo tras un deploy que "corrió bien" suele ser justamente esto, no un bug de lógica.
+
 **IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
 
 **IMPORTANTE — archivos subidos manualmente por WinSCP:** Si en algún momento se subió un archivo manualmente por WinSCP (porque el webhook no lo deployó), git en Ferozo lo ve como "cambio local" y bloquea el próximo `git pull` con el error `Your local changes would be overwritten by merge`. Los archivos que históricamente han causado este problema: `app/Livewire/AdminAnalytics.php`, `resources/views/livewire/admin-analytics.blade.php`, `resources/views/livewire/bienvenida.blade.php`, `resources/views/livewire/configuracion.blade.php`, `routes/web.php`, `app/Http/Controllers/BannerUploadController.php` (untracked).
@@ -107,6 +109,26 @@ Ruta: `POST /admin/banner-upload` (protegida por `admin.auth`), controlador `app
 - El directorio `public/images/` está en el repo con un `.gitkeep`; su contenido está ignorado en `.gitignore`.
 
 **Por qué el form de upload está fuera del `<form wire:submit>`:** Livewire 4 intercepta todos los `submit` del form raíz. Anidar un `<form enctype="multipart/form-data">` dentro rompe el upload. La solución es tener ambos forms como elementos hermanos en el blade, no anidados.
+
+### Galería de fotos
+
+Tabla `galeria_fotos` (`id`, `filename`, `descripcion` nullable, `orden`, timestamps), modelo `GaleriaFoto` (accessor `url` → `asset('images/galeria/'.$filename)`).
+
+**Upload** (`POST /admin/galeria-upload`, `GaleriaUploadController`): mismo patrón que el banner (form HTML clásico, hermano del `wire:submit`, sin Storage ni symlinks), pero además comprime cada imagen con GD antes de guardarla:
+- Corrige la orientación según el EXIF (las fotos de celular vienen con un flag de rotación, no rotadas en los píxeles).
+- Aplana transparencia (PNG/WebP) sobre fondo blanco.
+- Redimensiona a máx. 1920px de ancho manteniendo la proporción.
+- Guarda siempre como `.jpg` a calidad 85%, sin importar el formato subido.
+- La validación no tiene límite de tamaño (`fotos.*` solo valida `image|mimes:jpg,jpeg,png,webp`) — el límite real lo maneja la compresión, no el peso del archivo original.
+- `public/.user.ini` sube `upload_max_filesize`/`post_max_size`/`memory_limit` para que PHP acepte el archivo original grande antes de procesarlo (funciona si Ferozo corre PHP-FPM; si no, se ignora sin romper nada).
+
+**Panel admin**: ruta `/galeria`, componente `AdminGaleria` — listado + edición inline de descripción + eliminar.
+
+**Panel público**: dentro de `Bienvenida` (panel `'galeria'`, método `abrirGaleria()`). Grid responsivo (2/3/4 columnas según viewport) con miniaturas `aspect-[4/5]` + `object-cover` (no cuadradas: un recorte cuadrado cortaba cabeza/pies en fotos verticales tipo retrato), y lightbox hecho con Alpine.js (viene incluido con Livewire, no se instaló nada externo) con navegación anterior/siguiente y cierre tocando afuera o con teclado.
+
+**Gotcha Alpine + Livewire:** el `x-data` del lightbox tiene su propio método para cerrarse — **nunca nombrarlo igual que una acción Livewire del mismo componente** (ej. `cerrar()`). El botón "← Volver" del panel usa `wire:click="cerrar"`, y un método de Alpine con el mismo nombre en un `x-data` ancestro puede pisar esa resolución silenciosamente (sin error visible en consola). Se usa `cerrarLightbox()` justamente para evitar esa colisión.
+
+**Uso previsto:** el club sube fotos por torneo y las borra manualmente después de cada uno — no es un archivo histórico acumulativo (para no llenar el disco del hosting compartido).
 
 ### PWA — instalación
 
