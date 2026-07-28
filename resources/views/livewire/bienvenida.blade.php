@@ -423,7 +423,8 @@
     ═══════════════════════════════════════════════════════ --}}
     @elseif($panel === 'galeria')
 
-    <div x-data="{
+    <div wire:key="panel-galeria"
+         x-data="{
             fotos: {{ Js::from($fotosGaleria->map(fn($f) => ['url' => $f->url, 'descripcion' => $f->descripcion ?? ''])->values()) }},
             open: false,
             index: 0,
