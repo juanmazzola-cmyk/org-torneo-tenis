@@ -428,11 +428,11 @@
             open: false,
             index: 0,
             abrir(i) { this.index = i; this.open = true; },
-            cerrar() { this.open = false; },
+            cerrarLightbox() { this.open = false; },
             anterior() { this.index = (this.index - 1 + this.fotos.length) % this.fotos.length; },
             siguiente() { this.index = (this.index + 1) % this.fotos.length; },
          }"
-         @keydown.escape.window="cerrar()"
+         @keydown.escape.window="cerrarLightbox()"
          @keydown.arrow-left.window="open && anterior()"
          @keydown.arrow-right.window="open && siguiente()">
 
@@ -467,9 +467,9 @@
         <div x-show="open"
              class="fixed inset-0 z-[60] flex items-center justify-center p-4"
              style="background:rgba(0,0,0,0.9)"
-             @click.self="cerrar()">
+             @click.self="cerrarLightbox()">
 
-            <button @click="cerrar()" type="button"
+            <button @click="cerrarLightbox()" type="button"
                     style="position:absolute; top:16px; right:20px; color:white; font-size:2rem; line-height:1; background:transparent; border:none; cursor:pointer; z-index:2;">
                 ✕
             </button>
