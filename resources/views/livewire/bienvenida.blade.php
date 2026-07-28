@@ -419,6 +419,65 @@
     </div>
 
     {{-- ═══════════════════════════════════════════════════════
+         PANEL: GALERÍA DE FOTOS
+    ═══════════════════════════════════════════════════════ --}}
+    @elseif($panel === 'galeria')
+
+    <div class="flex flex-col min-h-screen">
+        <div class="sticky top-0 z-10 bg-green-900/90 backdrop-blur border-b border-green-700/50 shadow-lg">
+            <div class="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+                <button wire:click="cerrar" class="text-green-400 hover:text-white transition text-sm shrink-0">← Volver</button>
+                <h1 class="text-white font-bold text-lg">📷 Galería de Fotos</h1>
+            </div>
+        </div>
+
+        <div class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
+            @if($fotosGaleria->isEmpty())
+                <div class="bg-white/10 rounded-2xl p-10 text-center text-green-200">
+                    Todavía no hay fotos en la galería.
+                </div>
+            @else
+                <div class="columns-2 sm:columns-3 gap-2 space-y-2">
+                    @foreach($fotosGaleria as $foto)
+                        <div class="break-inside-avoid">
+                            <img src="{{ $foto->url }}"
+                                 alt="{{ $foto->descripcion }}"
+                                 loading="lazy"
+                                 onclick="abrirLightbox('{{ $foto->url }}', {{ Js::from($foto->descripcion ?? '') }})"
+                                 class="w-full rounded-xl shadow-lg cursor-pointer hover:opacity-90 transition">
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- Lightbox --}}
+    <div id="lightbox-galeria" onclick="cerrarLightbox()"
+         style="display:none; position:fixed; inset:0; z-index:60; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; padding:20px; cursor:zoom-out;">
+        <button onclick="cerrarLightbox()" type="button"
+                style="position:absolute; top:16px; right:20px; color:white; font-size:2rem; line-height:1; background:transparent; border:none; cursor:pointer;">
+            ✕
+        </button>
+        <div style="max-width:100%; max-height:100%; text-align:center;" onclick="event.stopPropagation()">
+            <img id="lightbox-galeria-img" src="" alt="" style="max-width:100%; max-height:80vh; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.6);">
+            <p id="lightbox-galeria-desc" class="text-white text-sm mt-3"></p>
+        </div>
+    </div>
+
+    <script>
+        function abrirLightbox(src, desc) {
+            document.getElementById('lightbox-galeria-img').src = src;
+            document.getElementById('lightbox-galeria-desc').textContent = desc || '';
+            document.getElementById('lightbox-galeria').style.display = 'flex';
+        }
+        function cerrarLightbox() {
+            document.getElementById('lightbox-galeria').style.display = 'none';
+            document.getElementById('lightbox-galeria-img').src = '';
+        }
+    </script>
+
+    {{-- ═══════════════════════════════════════════════════════
          PANTALLA PRINCIPAL
     ═══════════════════════════════════════════════════════ --}}
     @else
@@ -562,11 +621,20 @@
                     </div>
                 </button>
                 <button wire:click="abrirMisPartidos"
-                        style="grid-column:1/-1; background:rgba(99,179,237,0.15); border:1px solid rgba(144,205,244,0.35); border-radius:0.75rem; padding:18px 16px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
+                        style="background:rgba(99,179,237,0.15); border:1px solid rgba(144,205,244,0.35); border-radius:0.75rem; padding:18px 16px; text-align:center; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:background .15s">
                     <span style="font-size:2.25rem">🎾</span>
                     <div>
                         <p class="text-white font-bold text-sm leading-tight">Mis Partidos</p>
                         <p style="color:rgba(147,197,253,0.85); font-size:.75rem; margin-top:2px">Seguí tu estadística personal</p>
+                    </div>
+                </button>
+                <button wire:click="abrirGaleria"
+                        class="flex flex-col items-center gap-2 bg-white/15 border border-white/25
+                               rounded-xl px-3 py-5 hover:bg-white/25 transition text-center w-full">
+                    <span class="text-4xl">📷</span>
+                    <div>
+                        <p class="text-white font-bold text-sm leading-tight">Galería de Fotos</p>
+                        <p class="text-green-200 text-xs leading-tight mt-0.5">Fotos del club y torneos</p>
                     </div>
                 </button>
                 <button id="pwa-install-inline" onclick="pwaBannerInstall()"
