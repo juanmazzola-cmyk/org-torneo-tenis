@@ -58,7 +58,7 @@ Routes are in `routes/web.php`. Admin routes use the `admin.auth` middleware ali
 
 ### Deploy
 
-Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` secret) which pulls and deploys on the hosting server.
+Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` secret) which pulls and deploys on the hosting server. **Hoy el webhook no dispara solo: después del push el deploy se hace a mano (ver "Estado conocido" abajo).**
 
 **IMPORTANTE:** Ferozo no tiene Node.js, así que **cualquier clase de Tailwind nueva (no solo las ya usadas antes en el proyecto) necesita `npm run build` antes de commitear**, o simplemente no existe en producción — el sitio sirve el CSS ya compilado en `public/build`, no lo genera al vuelo. Un layout roto/sin estilo tras un deploy que "corrió bien" suele ser justamente esto, no un bug de lógica.
 
@@ -68,7 +68,7 @@ Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` s
 
 **OJO — volver a subir la versión "actual" por WinSCP NO alcanza si el HEAD del servidor quedó atrasado varios commits.** El error de git compara el archivo en disco contra el commit en el que está parado el HEAD del servidor, no contra el último commit de `origin/main`. Si el HEAD del servidor quedó viejo (ej. atascado en un commit de hace varias features), subir la versión más nueva de un archivo sigue marcándolo como "modificado" para siempre, porque nunca va a coincidir con lo que git espera ahí. En ese caso la única solución real es la recuperación completa de más abajo (borrar la carpeta y re-clonar), no seguir subiendo archivos a mano.
 
-**Estado conocido (2026-07-17):** el deploy automático quedó roto — el HEAD de git en el servidor está clavado en el commit `43e458e` (viejo) y todo `git pull` posterior aborta con el error de arriba. Mientras esto no se resuelva con la recuperación completa, los pushes a `main` NO se reflejan solos en producción — hay que subir los archivos cambiados a mano por WinSCP después de cada push. El sitio en sí sigue funcionando bien (los archivos ya en disco no se tocan cuando el pull aborta), solo el pipeline automático está roto.
+**Estado conocido (2026-10-04):** el deploy funciona (el `git pull` en el servidor ya no aborta; el problema del HEAD clavado en `43e458e` de 2026-07-17 quedó resuelto), **pero el webhook no dispara automáticamente** — aunque el GitHub Action quede en verde, el pull no se ejecuta solo. Después de cada push a `main` hay que disparar el deploy **a mano** desde DonWeb. No hace falta subir archivos por WinSCP.
 
 #### Acceso al servidor
 
