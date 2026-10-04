@@ -142,6 +142,12 @@ class MasterGrupo extends Model
 
             [$sg1, $sp1, $gg1, $gp1] = $this->parseResultado($partido->resultado);
 
+            // El resultado se guarda con los games del ganador primero; si ganó
+            // jugador2, invertimos para que los valores queden desde la óptica de jugador1.
+            if ($partido->ganador_id == $j2) {
+                [$sg1, $sp1, $gg1, $gp1] = [$sp1, $sg1, $gp1, $gg1];
+            }
+
             $stats[$j1]['pj']++; $stats[$j2]['pj']++;
             $stats[$j1]['sg'] += $sg1; $stats[$j1]['sp'] += $sp1;
             $stats[$j2]['sg'] += $sp1; $stats[$j2]['sp'] += $sg1;
