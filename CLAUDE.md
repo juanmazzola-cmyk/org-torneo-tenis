@@ -48,6 +48,20 @@ npm run build
 1. **Regular tournaments** — Draw-based brackets (`Draw`, `Partido` models).
 2. **Master tournaments** — Round-robin zones (`MasterGrupo`, `MasterJugadorGrupo`, `MasterPartido`) followed by a knockout final (`MasterFinal`). Managed via `MasterDetalle` Livewire component.
 
+#### Master — retiro por lesión con suplente
+
+Botón "Retirar" en cada jugador de la zona (`MasterDetalle::abrirRetirar()` / `retirarJugador()`):
+
+- El lesionado queda en la zona con `master_jugadores_grupo.retirado = 1`: sus partidos **jugados** se mantienen y suman en la tabla, pero `calcularPosiciones()` lo manda siempre al final, no clasifica (`generarFaseFinal()` filtra retirados) y recibe los 40 pts de no clasificado en el ranking.
+- El suplente (inscripto en la categoría y fuera de las zonas) entra como fila nueva con `posicion = max + 1` (5) y `reemplaza_a_id` = id del lesionado. Ocupa su lugar en los partidos **pendientes** (`ganador_id` null) de J2/J3. La tabla queda con 5 filas.
+- **El reemplazo se guarda en `master_jugadores_grupo`, no en los partidos**, porque `actualizarCruces()`/`limpiarCruces()` reescriben J2/J3. `MasterGrupo::aplicarReemplazos()` se vuelve a llamar al final de `actualizarCruces()`, así un recálculo nunca vuelve a poner al lesionado.
+- Restricciones: solo con la J1 de la zona completa, sin fase final generada, y el lesionado con al menos un partido pendiente. Con un retirado en la zona: no se puede Cambiar/Quitar jugadores, y la J1 no se puede editar/anular si ya hay resultados en J2/J3 (`jornada1Bloqueada()`; se muestra 🔒).
+- No hay "reincorporar": deshacer un retiro es manual en la base.
+
+### Ranking — caché
+
+`RankingService::calcular()` cachea el resultado **5 minutos** (clave por combinación de filtros) y **nadie la invalida** al cargar resultados (ni `MasterDetalle` ni `DrawBracket`). Si una columna/puntos nuevos "no aparecen" en Ranking (admin o público) justo después de cargar una final, primero esperar 5 minutos y recargar antes de sospechar un bug — la tabla `rankings` normalmente ya está bien. No hay columna que marque filas de Master: se distinguen por `torneos.tipo = 'master'`, y en pantalla el Master es una columna más con el nombre del torneo. Los desempates por sets/games solo cuentan partidos de draws (`Partido`), no de Master.
+
 ### Authentication
 
 Custom `AdminAuth` middleware checks `session('admin_logged_in')`. The `AdminLogin` Livewire component handles login. There is no `User` model used for auth.
@@ -68,13 +82,15 @@ Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` s
 
 **OJO — volver a subir la versión "actual" por WinSCP NO alcanza si el HEAD del servidor quedó atrasado varios commits.** El error de git compara el archivo en disco contra el commit en el que está parado el HEAD del servidor, no contra el último commit de `origin/main`. Si el HEAD del servidor quedó viejo (ej. atascado en un commit de hace varias features), subir la versión más nueva de un archivo sigue marcándolo como "modificado" para siempre, porque nunca va a coincidir con lo que git espera ahí. En ese caso la única solución real es la recuperación completa de más abajo (borrar la carpeta y re-clonar), no seguir subiendo archivos a mano.
 
-**Estado conocido (2026-10-04):** el deploy funciona (el `git pull` en el servidor ya no aborta; el problema del HEAD clavado en `43e458e` de 2026-07-17 quedó resuelto), **pero el webhook no dispara automáticamente** — aunque el GitHub Action quede en verde, el pull no se ejecuta solo. Después de cada push a `main` hay que disparar el deploy **a mano** desde DonWeb. No hace falta subir archivos por WinSCP.
+**Estado conocido (2026-10-04):** el deploy funciona (el `git pull` en el servidor ya no aborta; el problema del HEAD clavado en `43e458e` de 2026-07-17 quedó resuelto), **pero el webhook no dispara automáticamente** — aunque el GitHub Action quede en verde, el pull no se ejecuta solo. Después de cada push a `main` hay que disparar el deploy **a mano** desde **DonWeb → Mi Sitio Web → GIT → Deploy**. No hace falta subir archivos por WinSCP.
 
 #### Acceso al servidor
 
 El servidor de Ferozo **no tiene terminal SSH disponible**. El acceso a archivos se hace vía **WinSCP** (FTP) o el Administrador de Archivos de DonWeb. No hay forma de correr comandos artisan ni git directamente en producción.
 
 La base de datos en producción es **MySQL** (no SQLite). Las credenciales están en el `.env` del servidor.
+
+**Migraciones:** como no hay `artisan` en producción, cada migración nueva se aplica a mano como SQL crudo en phpMyAdmin de DonWeb, **antes** de disparar el deploy (si el código llega primero, falla al leer columnas inexistentes). Además insertar la fila en `migrations` para mantenerla consistente: `INSERT INTO migrations (migration, batch) SELECT '<nombre_archivo_sin_.php>', COALESCE(MAX(batch),0)+1 FROM migrations;`. Orden: SQL → push → deploy manual.
 
 #### Recuperación del deploy roto (git divergido)
 
