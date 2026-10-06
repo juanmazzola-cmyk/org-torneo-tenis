@@ -10,6 +10,7 @@ use App\Models\MasterPartido;
 use App\Models\Ranking;
 use App\Models\Jugador;
 use App\Models\Torneo;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class MasterDetalle extends Component
@@ -45,6 +46,11 @@ class MasterDetalle extends Component
     public ?int $quitarGrupoId        = null;
     public ?int $quitarJugadorId      = null;
 
+    // Modal retirar jugador (lesión) + elegir suplente
+    public bool $modalRetirar     = false;
+    public ?int $retirarGrupoId   = null;
+    public ?int $retirarJugadorId = null;
+
     public function mount(Torneo $torneo, Master $master): void
     {
         $this->torneo = $torneo;
@@ -64,6 +70,12 @@ class MasterDetalle extends Component
     public function asignarJugador(int $jugadorId): void
     {
         $grupo = MasterGrupo::findOrFail($this->asignarGrupoId);
+
+        if ($grupo->tieneRetirado()) {
+            session()->flash('error', 'La zona tiene un jugador retirado: no se pueden cambiar jugadores.');
+            $this->resetAsignar();
+            return;
+        }
 
         $otroGrupo = $this->master->grupos()->where('id', '!=', $this->asignarGrupoId)->first();
         if ($otroGrupo?->jugadoresGrupo()->where('jugador_id', $jugadorId)->exists()) {
@@ -105,6 +117,13 @@ class MasterDetalle extends Component
     public function quitarJugador(): void
     {
         $grupo = MasterGrupo::findOrFail($this->quitarGrupoId);
+
+        if ($grupo->tieneRetirado()) {
+            $this->cancelarQuitarJugador();
+            session()->flash('error', 'La zona tiene un jugador retirado: no se pueden quitar jugadores.');
+            return;
+        }
+
         $grupo->partidos()->delete();
         $grupo->jugadoresGrupo()->where('jugador_id', $this->quitarJugadorId)->delete();
 
@@ -124,11 +143,112 @@ class MasterDetalle extends Component
         $this->quitarJugadorId      = null;
     }
 
+    // ── Retiro por lesión + suplente ───────────────────────────────────
+
+    public function abrirRetirar(int $grupoId, int $jugadorId): void
+    {
+        $grupo = MasterGrupo::findOrFail($grupoId);
+
+        if ($error = $this->validarRetiro($grupo, $jugadorId)) {
+            session()->flash('error', $error);
+            return;
+        }
+
+        $this->retirarGrupoId   = $grupoId;
+        $this->retirarJugadorId = $jugadorId;
+        $this->buscarJugador    = '';
+        $this->modalRetirar     = true;
+    }
+
+    public function retirarJugador(int $suplenteId): void
+    {
+        $grupo = MasterGrupo::findOrFail($this->retirarGrupoId);
+
+        if ($error = $this->validarRetiro($grupo, $this->retirarJugadorId)) {
+            session()->flash('error', $error);
+            $this->resetRetirar();
+            return;
+        }
+
+        $inscripto = Jugador::whereKey($suplenteId)
+            ->whereHas('inscripciones', fn($q) =>
+                $q->where('torneo_id', $this->master->torneo_id)
+                  ->where('categoria_id', $this->master->categoria_id)
+            )->exists();
+
+        $enAlgunaZona = MasterJugadorGrupo::whereIn('grupo_id', $this->master->grupos()->pluck('id'))
+            ->where('jugador_id', $suplenteId)
+            ->exists();
+
+        if (!$inscripto || $enAlgunaZona) {
+            session()->flash('error', 'El suplente tiene que estar inscripto en la categoría y no estar en ninguna zona.');
+            $this->resetRetirar();
+            return;
+        }
+
+        DB::transaction(function () use ($grupo, $suplenteId) {
+            $grupo->jugadoresGrupo()
+                ->where('jugador_id', $this->retirarJugadorId)
+                ->update(['retirado' => true]);
+
+            MasterJugadorGrupo::create([
+                'grupo_id'       => $grupo->id,
+                'jugador_id'     => $suplenteId,
+                'posicion'       => $grupo->jugadoresGrupo()->max('posicion') + 1,
+                'reemplaza_a_id' => $this->retirarJugadorId,
+            ]);
+
+            $grupo->aplicarReemplazos();
+        });
+
+        $this->recalcularRankingMaster();
+        $this->resetRetirar();
+        session()->flash('ok', 'Jugador retirado. El suplente ocupa su lugar en los partidos pendientes.');
+    }
+
+    /** Devuelve el motivo por el que no se puede retirar, o null si se puede */
+    private function validarRetiro(MasterGrupo $grupo, ?int $jugadorId): ?string
+    {
+        if ((int) $grupo->master_id !== (int) $this->master->id) return 'Zona inválida.';
+
+        if (MasterFinal::where('master_id', $this->master->id)->exists()) {
+            return 'La fase final ya está generada: no se puede retirar jugadores de zona.';
+        }
+
+        if (!$grupo->jornada1Completa()) {
+            return 'Primero hay que terminar la Jornada 1 de la zona (los 2 partidos con resultado).';
+        }
+
+        $jg = $grupo->jugadoresGrupo()->where('jugador_id', $jugadorId)->first();
+        if (!$jg)          return 'El jugador no pertenece a la zona.';
+        if ($jg->retirado) return 'El jugador ya está retirado.';
+
+        $tienePendientes = $grupo->partidos()
+            ->whereNull('ganador_id')
+            ->where(fn($q) => $q->where('jugador1_id', $jugadorId)->orWhere('jugador2_id', $jugadorId))
+            ->exists();
+
+        if (!$tienePendientes) return 'El jugador no tiene partidos pendientes.';
+
+        return null;
+    }
+
+    public function cancelarRetirar(): void
+    {
+        $this->resetRetirar();
+    }
+
     // ── Resultados zona ────────────────────────────────────────────────
 
     public function abrirResultado(int $partidoId): void
     {
         $partido = MasterPartido::findOrFail($partidoId);
+
+        if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
+            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            return;
+        }
+
         $this->partidoId = $partidoId;
         $this->ganadorId = (string) ($partido->ganador_id ?? '');
         $this->esWO      = $partido->resultado === 'W.O.';
@@ -167,6 +287,12 @@ class MasterDetalle extends Component
 
         $esJornada1  = $partido->jornada === 1;
 
+        if ($esJornada1 && $partido->grupo->jornada1Bloqueada()) {
+            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            $this->resetResultado();
+            return;
+        }
+
         if ($esJornada1 && $partido->ganador_id) {
             $partido->grupo->limpiarCruces();
             $this->limpiarFaseFinal();
@@ -189,6 +315,11 @@ class MasterDetalle extends Component
     public function anularResultado(int $partidoId): void
     {
         $partido = MasterPartido::findOrFail($partidoId);
+
+        if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
+            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            return;
+        }
 
         if ($partido->jornada === 1) {
             $partido->grupo->limpiarCruces();
@@ -219,8 +350,10 @@ class MasterDetalle extends Component
         $zona1 = $grupos->firstWhere('numero', 1);
         $zona2 = $grupos->firstWhere('numero', 2);
 
-        $pos1 = $zona1->calcularPosiciones();
-        $pos2 = $zona2->calcularPosiciones();
+        // Un retirado nunca clasifica (calcularPosiciones ya los manda al final; esto es un resguardo)
+        $sinRetirados = fn(array $pos) => array_values(array_filter($pos, fn($s) => !$s['retirado']));
+        $pos1 = $sinRetirados($zona1->calcularPosiciones());
+        $pos2 = $sinRetirados($zona2->calcularPosiciones());
 
         $p1z1 = $pos1[0]['jugador']->id ?? null; // 1° Zona 1
         $p2z1 = $pos1[1]['jugador']->id ?? null; // 2° Zona 1
@@ -439,6 +572,14 @@ class MasterDetalle extends Component
         $this->buscarJugador   = '';
     }
 
+    private function resetRetirar(): void
+    {
+        $this->modalRetirar     = false;
+        $this->retirarGrupoId   = null;
+        $this->retirarJugadorId = null;
+        $this->buscarJugador    = '';
+    }
+
     private function resetResultado(): void
     {
         $this->modalResultado = false;
@@ -509,6 +650,7 @@ class MasterDetalle extends Component
     public function cerrarModales(): void
     {
         $this->resetAsignar();
+        $this->resetRetirar();
         $this->resetResultado();
         $this->resetResultadoFinal();
     }
@@ -520,6 +662,7 @@ class MasterDetalle extends Component
         $grupos = $this->master->grupos()
             ->with([
                 'jugadoresGrupo.jugador',
+                'jugadoresGrupo.reemplazaA',
                 'partidos.jugador1',
                 'partidos.jugador2',
                 'partidos.ganador',

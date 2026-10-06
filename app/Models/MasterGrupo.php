@@ -93,6 +93,59 @@ class MasterGrupo extends Model
             ->update(['jugador1_id' => $w1, 'jugador2_id' => $l2, 'resultado' => null, 'ganador_id' => null]);
         $this->partidos()->where('jornada', 3)->where('orden', 2)
             ->update(['jugador1_id' => $l1, 'jugador2_id' => $w2, 'resultado' => null, 'ganador_id' => null]);
+
+        // Los cruces se arman con los ids de J1; si hubo retiros, el suplente ocupa el lugar
+        $this->aplicarReemplazos();
+    }
+
+    /** Mapa [lesionado_id => suplente_id], resolviendo cadenas (suplente que también se retira) */
+    public function reemplazos(): array
+    {
+        $directo = $this->jugadoresGrupo()
+            ->whereNotNull('reemplaza_a_id')
+            ->pluck('jugador_id', 'reemplaza_a_id')
+            ->all();
+
+        $mapa = [];
+        foreach ($directo as $lesionado => $suplente) {
+            $final = $suplente;
+            $vistos = [$lesionado => true];
+            while (isset($directo[$final]) && !isset($vistos[$final])) {
+                $vistos[$final] = true;
+                $final = $directo[$final];
+            }
+            $mapa[$lesionado] = $final;
+        }
+        return $mapa;
+    }
+
+    /** Pone al suplente en lugar del lesionado en los partidos pendientes (los jugados no se tocan) */
+    public function aplicarReemplazos(): void
+    {
+        foreach ($this->reemplazos() as $lesionado => $suplente) {
+            $this->partidos()->whereNull('ganador_id')->where('jugador1_id', $lesionado)
+                ->update(['jugador1_id' => $suplente]);
+            $this->partidos()->whereNull('ganador_id')->where('jugador2_id', $lesionado)
+                ->update(['jugador2_id' => $suplente]);
+        }
+    }
+
+    public function tieneRetirado(): bool
+    {
+        return $this->jugadoresGrupo()->where('retirado', true)->exists();
+    }
+
+    public function jornada1Completa(): bool
+    {
+        $j1 = $this->partidos()->where('jornada', 1)->get();
+        return $j1->count() === 2 && $j1->every(fn($p) => $p->ganador_id);
+    }
+
+    /** Con un retirado en la zona, J1 queda congelada si ya hay resultados en J2/J3 */
+    public function jornada1Bloqueada(): bool
+    {
+        return $this->tieneRetirado()
+            && $this->partidos()->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->exists();
     }
 
     /** Limpia jornadas 2 y 3 (cuando se anula un resultado de jornada 1) */
@@ -125,6 +178,7 @@ class MasterGrupo extends Model
             $stats[$jg->jugador_id] = [
                 'jugador'   => $jg->jugador,
                 'posicion'  => $jg->posicion,
+                'retirado'  => (bool) $jg->retirado,
                 'pj' => 0, 'pg' => 0, 'pp' => 0,
                 'sg' => 0, 'sp' => 0,
                 'gg' => 0, 'gp' => 0,
@@ -170,7 +224,9 @@ class MasterGrupo extends Model
         }
 
         usort($stats, function ($a, $b) {
-            if ($b['puntos']   !== $a['puntos'])   return $b['puntos']   - $a['puntos'];
+            // Los retirados van siempre al final, sin importar los puntos
+            if ($a['retirado'] !== $b['retirado']) return $a['retirado'] <=> $b['retirado'];
+            if ($b['puntos']  !== $a['puntos'])   return $b['puntos']   - $a['puntos'];
             if ($b['dif_part'] !== $a['dif_part']) return $b['dif_part'] - $a['dif_part'];
             if ($b['dif_set']  !== $a['dif_set'])  return $b['dif_set']  - $a['dif_set'];
             return $b['dif_game'] - $a['dif_game'];

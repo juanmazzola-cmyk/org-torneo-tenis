@@ -90,12 +90,15 @@
                         </thead>
                         <tbody>
                             @foreach($pos as $i => $s)
-                            <tr class="{{ $i < 2 ? 'bg-white/10' : '' }} border-t border-white/10">
+                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($i < 2 ? 'bg-white/10' : '') }} border-t border-white/10">
                                 <td class="px-1 py-1.5 text-white/60 font-bold">
-                                    {{ $i < 2 ? '✓' : ($i + 1) }}
+                                    {{ $s['retirado'] ? 'R' : ($i < 2 ? '✓' : ($i + 1)) }}
                                 </td>
                                 <td class="px-2 py-1.5 font-semibold text-white whitespace-nowrap">
                                     {{ $s['jugador']->apellido }}
+                                    @if($s['retirado'])
+                                        <span class="text-xs bg-red-500/30 text-red-200 px-1.5 py-0.5 rounded font-medium">Retirado</span>
+                                    @endif
                                 </td>
                                 <td class="px-1 py-1.5 text-center text-white/70">{{ $s['pj'] }}</td>
                                 <td class="px-1 py-1.5 text-center text-white/70">{{ $s['pg'] }}</td>

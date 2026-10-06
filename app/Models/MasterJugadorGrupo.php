@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MasterJugadorGrupo extends Model
 {
     protected $table = 'master_jugadores_grupo';
-    protected $fillable = ['grupo_id', 'jugador_id', 'posicion'];
+    protected $fillable = ['grupo_id', 'jugador_id', 'posicion', 'retirado', 'reemplaza_a_id'];
+
+    protected $casts = [
+        'retirado' => 'boolean',
+    ];
 
     public function grupo(): BelongsTo
     {
@@ -18,5 +22,11 @@ class MasterJugadorGrupo extends Model
     public function jugador(): BelongsTo
     {
         return $this->belongsTo(Jugador::class);
+    }
+
+    /** Jugador lesionado al que reemplaza este suplente */
+    public function reemplazaA(): BelongsTo
+    {
+        return $this->belongsTo(Jugador::class, 'reemplaza_a_id');
     }
 }

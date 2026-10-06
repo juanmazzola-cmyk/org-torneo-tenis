@@ -17,6 +17,12 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Dos zonas lado a lado -->
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         @foreach($grupos as $grupo)
@@ -25,6 +31,10 @@
             $partidos       = $grupo->partidos->groupBy('jornada');
             $pos            = $posiciones[$grupo->id] ?? [];
             $hayPartidos    = $grupo->partidos->isNotEmpty();
+            $tieneRetirado  = $grupo->jugadoresGrupo->contains('retirado', true);
+            $j1Bloqueada    = $tieneRetirado
+                && $grupo->partidos->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->isNotEmpty();
+            $maxPos         = max(4, $jugadoresGrupo->keys()->max() ?? 0);
         @endphp
 
         <div class="bg-white rounded-xl shadow p-5">
@@ -36,26 +46,40 @@
             <div class="mb-5">
                 <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Jugadores</h3>
                 <div class="grid grid-cols-2 gap-2">
-                    @for($pos_num = 1; $pos_num <= 4; $pos_num++)
+                    @for($pos_num = 1; $pos_num <= $maxPos; $pos_num++)
                     @php $jg = $jugadoresGrupo->get($pos_num); @endphp
+                    @continue(!$jg && $pos_num > 4)
                     <div class="flex items-center justify-between border rounded-lg px-3 py-2
-                                {{ $jg ? 'bg-gray-50 border-gray-200' : 'bg-white border-dashed border-gray-300' }}">
-                        <div class="flex items-center gap-2">
+                                {{ $jg ? ($jg->retirado ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-gray-50 border-gray-200') : 'bg-white border-dashed border-gray-300' }}">
+                        <div class="flex items-center gap-2 min-w-0">
                             <span class="text-xs font-bold text-gray-400 w-4">{{ $pos_num }}</span>
                             @if($jg)
-                                <span class="text-sm font-medium text-gray-800">
+                                <span class="text-sm font-medium {{ $jg->retirado ? 'text-gray-500 line-through' : 'text-gray-800' }}">
                                     {{ $jg->jugador->apellido }}, {{ $jg->jugador->nombre }}
                                 </span>
+                                @if($jg->retirado)
+                                    <span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Retirado</span>
+                                @elseif($jg->reemplazaA)
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded"
+                                          title="Suplente de {{ $jg->reemplazaA->apellido }}">Suplente</span>
+                                @endif
                             @else
                                 <span class="text-sm text-gray-400 italic">Vacío</span>
                             @endif
                         </div>
                         <div class="flex items-center gap-1">
+                            @if(!$tieneRetirado)
                             <button wire:click="abrirAsignar({{ $grupo->id }}, {{ $pos_num }})"
                                     class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50 transition">
                                 {{ $jg ? 'Cambiar' : 'Asignar' }}
                             </button>
-                            @if($jg)
+                            @endif
+                            @if($jg && $hayPartidos && !$jg->retirado)
+                            <button wire:click="abrirRetirar({{ $grupo->id }}, {{ $jg->jugador_id }})"
+                                    title="Retirar (lesión)"
+                                    class="text-xs text-orange-600 hover:text-orange-800 font-medium px-1 py-1 rounded hover:bg-orange-50 transition">Retirar</button>
+                            @endif
+                            @if($jg && !$tieneRetirado)
                             <button wire:click="confirmarQuitarJugador({{ $grupo->id }}, {{ $jg->jugador_id }})"
                                     class="text-xs text-red-500 hover:text-red-700 px-1 py-1 rounded hover:bg-red-50 transition">✕</button>
                             @endif
@@ -106,7 +130,9 @@
                                 </span>
                             @endif
                         </div>
-                        @if($partido->jugador1_id && $partido->jugador2_id)
+                        @if($jornada == 1 && $j1Bloqueada && $partido->ganador_id)
+                        <span class="text-xs text-gray-400 ml-2 shrink-0" title="Zona con retirado y resultados en J2/J3">🔒</span>
+                        @elseif($partido->jugador1_id && $partido->jugador2_id)
                         <div class="flex items-center gap-1 ml-2 shrink-0">
                             <button wire:click="abrirResultado({{ $partido->id }})"
                                     class="text-xs px-2 py-1 rounded font-medium transition
@@ -150,10 +176,13 @@
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse($pos as $i => $s)
-                            <tr class="{{ $i === 0 ? 'bg-yellow-50' : ($i === 1 ? 'bg-gray-50' : '') }} hover:bg-gray-50">
-                                <td class="px-2 py-1.5 font-bold text-gray-500">{{ $i + 1 }}</td>
+                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($i === 0 ? 'bg-yellow-50' : ($i === 1 ? 'bg-gray-50' : '')) }} hover:bg-gray-50">
+                                <td class="px-2 py-1.5 font-bold text-gray-500">{{ $s['retirado'] ? 'R' : $i + 1 }}</td>
                                 <td class="px-2 py-1.5 font-semibold text-gray-800 whitespace-nowrap">
                                     {{ $s['jugador']->apellido }}
+                                    @if($s['retirado'])
+                                        <span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">Retirado</span>
+                                    @endif
                                 </td>
                                 <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['pj'] }}</td>
                                 <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['pg'] }}</td>
@@ -324,6 +353,60 @@
 
             <div class="flex justify-end mt-4 shrink-0">
                 <button wire:click="cerrarModales"
+                        class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- ══ Modal Retirar (lesión) + Suplente ═════════════════════════════ -->
+    @if($modalRetirar)
+    @php $lesionado = \App\Models\Jugador::find($retirarJugadorId); @endphp
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
+        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4 flex flex-col"
+             style="max-height: 90vh;">
+            <h3 class="text-lg font-bold text-gray-800 mb-1 shrink-0">Retirar por lesión</h3>
+            <p class="text-sm text-gray-500 mb-3 shrink-0">
+                <span class="font-medium text-gray-700">{{ $lesionado?->apellido }}, {{ $lesionado?->nombre }}</span>
+                queda como retirado (sus partidos jugados se mantienen).
+                Elegí el suplente que ocupa su lugar en los partidos pendientes.
+            </p>
+
+            <div class="mb-3 shrink-0">
+                <input type="text" wire:model.live.debounce.200ms="buscarJugador"
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Buscar suplente..."
+                       autocomplete="off">
+            </div>
+
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-100 overflow-y-auto flex-1">
+                @forelse($jugadoresDisponibles as $j)
+                @php $yaAsignado = $jugadoresAsignados->contains($j->id); @endphp
+                @if($yaAsignado)
+                    <div class="flex items-center gap-3 px-3 py-2.5 opacity-40 bg-gray-50 cursor-not-allowed">
+                        <span class="text-sm text-gray-700">
+                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="text-xs text-gray-400 ml-1">(ya en una zona)</span>
+                        </span>
+                    </div>
+                @else
+                    <button wire:click="retirarJugador({{ $j->id }})"
+                            wire:confirm="¿Confirmar retiro y entrada de {{ $j->apellido }} como suplente?"
+                            class="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-green-50 active:bg-green-100 transition cursor-pointer">
+                        <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
+                        <span class="text-sm text-gray-800">
+                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                        </span>
+                    </button>
+                @endif
+                @empty
+                    <div class="px-3 py-4 text-center text-gray-400 text-sm">No hay jugadores inscriptos en esta categoría</div>
+                @endforelse
+            </div>
+
+            <div class="flex justify-end mt-4 shrink-0">
+                <button wire:click="cancelarRetirar"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
             </div>
         </div>
