@@ -48,7 +48,7 @@ class RankingLista extends Component
         return view('livewire.ranking-lista', [
             'categoriasData' => $categoriasData,
             'torneos'        => Torneo::orderByDesc('fecha_inicio')->get(),
-            'categorias'     => Categoria::orderBy('nombre')->get(),
+            'categorias'     => Categoria::where('sin_ranking', false)->orderBy('nombre')->get(),
             'anos'           => $anos,
         ])->layout('layouts.app');
     }

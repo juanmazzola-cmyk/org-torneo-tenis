@@ -120,7 +120,12 @@ class Bienvenida extends Component
             : collect();
 
         $needsCats  = in_array($this->panel, ['ranking', 'torneos']);
-        $categorias = $needsCats ? Categoria::orderBy('nombre')->get() : collect();
+        // El panel Torneos sigue mostrando todas (para filtrar torneos de dobles); el Ranking no
+        $categorias = $needsCats
+            ? Categoria::orderBy('nombre')
+                ->when($this->panel === 'ranking', fn($q) => $q->where('sin_ranking', false))
+                ->get()
+            : collect();
 
         $categoriasData = [];
 

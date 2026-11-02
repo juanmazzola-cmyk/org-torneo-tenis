@@ -80,6 +80,11 @@ class TorneoDetalle extends Component
                 $this->addError('categoria_id', 'El jugador ya está inscripto en esa categoría.');
                 return;
             }
+
+            if ($this->tipoNoCoincide((int) $this->jugador_id, (int) $this->categoria_id)) {
+                $this->addError('jugador_id', 'Las parejas solo se inscriben en categorías de dobles, y los jugadores individuales en las demás.');
+                return;
+            }
         }
 
         $data = [
@@ -197,7 +202,7 @@ class TorneoDetalle extends Component
                 'categoria_id' => $this->categoriaMasiva,
             ])->exists();
 
-            if ($catCount >= 2 || $existe) {
+            if ($catCount >= 2 || $existe || $this->tipoNoCoincide((int) $jugadorId, (int) $this->categoriaMasiva)) {
                 $omitidos++;
                 continue;
             }
@@ -211,7 +216,7 @@ class TorneoDetalle extends Component
         }
 
         $msg = "{$importados} jugador/es inscriptos";
-        if ($omitidos) $msg .= ", {$omitidos} omitido/s (ya inscriptos o límite de 2 categorías)";
+        if ($omitidos) $msg .= ", {$omitidos} omitido/s (ya inscriptos, límite de 2 categorías o pareja/individual en categoría que no corresponde)";
         session()->flash('ok', $msg . '.');
 
         $this->reset(['seleccionados', 'categoriaMasiva', 'buscarMasiva']);
@@ -225,6 +230,33 @@ class TorneoDetalle extends Component
     public function updatedCategoriaMasiva(): void
     {
         $this->seleccionados = [];
+    }
+
+    public function updatedCategoriaId(): void
+    {
+        // Si el jugador elegido ya no corresponde a la categoría (pareja vs individual), se descarta
+        if (!$this->editandoInscripcionId && $this->jugador_id
+            && $this->tipoNoCoincide((int) $this->jugador_id, (int) $this->categoria_id)) {
+            $this->jugador_id = '';
+        }
+    }
+
+    /** Parejas (jugador de categoría es_dobles) solo en categorías de dobles; individuales y Bye en las demás */
+    private function filtrarPorTipoCategoria($query, string $categoriaId)
+    {
+        $dobles = Categoria::where('es_dobles', true)->pluck('id');
+
+        return $dobles->contains((int) $categoriaId)
+            ? $query->whereIn('categoria_id', $dobles)
+            : $query->where(fn($q) => $q->whereNull('categoria_id')->orWhereNotIn('categoria_id', $dobles));
+    }
+
+    private function tipoNoCoincide(int $jugadorId, int $categoriaId): bool
+    {
+        $jugadorEsPareja = (bool) Jugador::find($jugadorId)?->categoria?->es_dobles;
+        $categoriaDobles = (bool) Categoria::find($categoriaId)?->es_dobles;
+
+        return $jugadorEsPareja !== $categoriaDobles;
     }
 
     private function resetInscripcion(): void
@@ -248,10 +280,17 @@ class TorneoDetalle extends Component
             ->select('inscripciones.*')
             ->get();
 
-        $jugadoresDisponibles = Jugador::orderBy('apellido')->orderBy('nombre')->get();
+        $jugadoresDisponibles = Jugador::orderBy('apellido')->orderBy('nombre')
+            ->where(fn($q) =>
+                $this->filtrarPorTipoCategoria($q, $this->categoria_id)
+                    // Al editar, el select está deshabilitado pero tiene que mostrar al jugador inscripto
+                    ->when($this->editandoInscripcionId, fn($q2) => $q2->orWhere('id', $this->jugador_id))
+            )
+            ->get();
 
         $jugadoresMasiva = Jugador::orderBy('apellido')->orderBy('nombre')
             ->where(fn($q) => $q->where('apellido', '!=', 'Bye')->orWhere('nombre', '!=', 'Bye'))
+            ->where(fn($q) => $this->filtrarPorTipoCategoria($q, $this->categoriaMasiva))
             ->when($this->buscarMasiva, fn($q) =>
                 $q->where(fn($q2) =>
                     $q2->where('apellido', 'like', '%' . $this->buscarMasiva . '%')

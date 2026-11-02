@@ -24,6 +24,17 @@
                            placeholder="Ej: A, B, C, Senior, Libre...">
                     @error('nombre') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" wire:model="sin_ranking" class="w-4 h-4 rounded text-green-600">
+                        Sin ranking <span class="text-xs text-gray-400">(no suma puntos)</span>
+                    </label>
+                    @error('sin_ranking') <span class="text-red-500 text-sm block">{{ $message }}</span> @enderror
+                    <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="checkbox" wire:model="es_dobles" class="w-4 h-4 rounded text-green-600">
+                        Dobles <span class="text-xs text-gray-400">(cada jugador es una pareja)</span>
+                    </label>
+                </div>
                 <div class="flex gap-2">
                     <button type="submit"
                             class="flex-1 bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition font-medium">
@@ -51,7 +62,15 @@
                 <tbody class="divide-y divide-gray-200">
                     @forelse($categorias as $cat)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 text-lg font-semibold text-gray-800">{{ $cat->nombre }}</td>
+                            <td class="px-6 py-4 text-lg font-semibold text-gray-800">
+                                {{ $cat->nombre }}
+                                @if($cat->es_dobles)
+                                    <span class="ml-2 text-xs font-medium bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Dobles</span>
+                                @endif
+                                @if($cat->sin_ranking)
+                                    <span class="ml-1 text-xs font-medium bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">Sin ranking</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-right space-x-2">
                                 <button wire:click="editar({{ $cat->id }})"
                                         class="text-blue-600 hover:text-blue-800 text-sm font-medium">

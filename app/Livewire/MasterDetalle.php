@@ -502,6 +502,9 @@ class MasterDetalle extends Component
             ->where('categoria_id', $this->master->categoria_id)
             ->delete();
 
+        // Categorías sin ranking (ej. Dobles): solo se limpian las filas, no se escriben puntos
+        if ($this->master->categoria->sin_ranking) return;
+
         $puntos = [];
 
         $semi1 = MasterFinal::where('master_id', $this->master->id)->where('tipo', 'semifinal_1')->first();

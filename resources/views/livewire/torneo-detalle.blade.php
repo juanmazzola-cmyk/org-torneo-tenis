@@ -73,6 +73,19 @@
                 {{ $editandoInscripcionId ? 'Editar Inscripción' : 'Inscribir Jugador' }}
             </h2>
             <form wire:submit="guardarInscripcion" class="space-y-3">
+                {{-- La categoría va primero: define si la lista muestra parejas (dobles) o jugadores individuales --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
+                    <select wire:model.live="categoria_id"
+                            {{ $editandoInscripcionId ? 'disabled' : '' }}
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="">Seleccionar categoría...</option>
+                        @foreach($categorias as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
+                        @endforeach
+                    </select>
+                    @error('categoria_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Jugador *</label>
                     <select wire:model="jugador_id"
@@ -84,18 +97,6 @@
                         @endforeach
                     </select>
                     @error('jugador_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                    <select wire:model="categoria_id"
-                            {{ $editandoInscripcionId ? 'disabled' : '' }}
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                        <option value="">Seleccionar categoría...</option>
-                        @foreach($categorias as $cat)
-                            <option value="{{ $cat->id }}">{{ $cat->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('categoria_id') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Observación</label>

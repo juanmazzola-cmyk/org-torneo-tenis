@@ -16,7 +16,7 @@ class RankingPublico extends Component
             'categoriasData' => RankingService::calcular(
                 $this->filtroCategoria ? (int)$this->filtroCategoria : null
             ),
-            'categorias' => Categoria::orderBy('nombre')->get(),
+            'categorias' => Categoria::where('sin_ranking', false)->orderBy('nombre')->get(),
         ])->layout('layouts.publica');
     }
 }
