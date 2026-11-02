@@ -58,9 +58,25 @@ Botón "Retirar" en cada jugador de la zona (`MasterDetalle::abrirRetirar()` / `
 - Restricciones: solo con la J1 de la zona completa, sin fase final generada, y el lesionado con al menos un partido pendiente. Con un retirado en la zona: no se puede Cambiar/Quitar jugadores, y la J1 no se puede editar/anular si ya hay resultados en J2/J3 (`jornada1Bloqueada()`; se muestra 🔒).
 - No hay "reincorporar": deshacer un retiro es manual en la base.
 
+#### Torneo de dobles (Master con otro formato)
+
+Se reutiliza el Master: el torneo se crea como tipo `master` y la categoría lleva **`es_dobles`** (formato y vista) y **`sin_ranking`** (no suma puntos). Cada pareja es **un jugador** con apellido `"Pérez / Gómez"` (siempre con espacios alrededor de la barra: `Jugadores` aplica `ucwords(strtolower())`, que solo pone mayúscula después de un espacio). Todo lo nuevo pasa por `categoria->es_dobles` o por "zona con 3 partidos" (que solo existe en dobles): el Master normal no cambia.
+
+- **Zonas:** al crear el Master (`TorneoDetalle::crearMaster()`) se elige 2, 3 o 4 zonas (`Master::crearGrupos($n)`); las parejas se asignan a mano, 3 o 4 por zona. La zona de 4 funciona igual que el Master. La de 3 se genera con el botón "Generar Partidos (zona de 3)": calendario **fijo** J1 1-2, J2 2-3, J3 1-3 (en orden de posición), descansa una pareja por jornada (`MasterGrupo::descansos()`).
+- **Gotcha — tamaño de zona:** `MasterGrupo::esDeTres()` cuenta **partidos** (3), no filas de `master_jugadores_grupo`: con un retiro una zona de 3 tiene 4 filas. En zona de 3 `limpiarCruces()` no hace nada (borraría J2/J3 para siempre, porque no hay cruces que rearmar) y `jornada1Bloqueada()` es siempre falso.
+- **Clasificación** (`Master::clasificacionDobles()`, la usan admin y público; siempre clasifican 4, los retirados nunca):
+  - 2 zonas: 1° y 2° de cada una; semis como el Master (1°Z1-2°Z2, 1°Z2-2°Z1).
+  - 3 zonas: los 3 ganadores + el **mejor segundo por promedios** (`MasterGrupo::promedios()` / `compararPromedios()`): puntos por partido jugado, después % de sets y % de games, con todos los partidos jugados (con retiro, cada pareja con los que jugó). El **W.O. cuenta como 6-0 6-0 solo en esa comparación**; la tabla de zona no cambia. Semis: el mejor segundo contra el mejor ganador de **otra** zona (ganadores ordenados por el mismo promedio; empate → número de zona), los otros dos ganadores entre sí.
+  - 4 zonas: el 1° de cada una; semis Z1-Z2 y Z3-Z4.
+- **Empate total entre mejores segundos:** "Generar Fase Final" se frena y abre un modal para elegir a mano (sorteo); `generarFaseFinal($id)` solo acepta un id de los empatados.
+- **Retiro con suplente** funciona igual que en el Master (en zona de 3, "J1 completa" = su único partido). **"Cambiar/Asignar" está bloqueado en zonas de 3 con partidos generados** (no se regeneran solos): quitar la pareja (✕) y volver a asignar.
+- **Vistas:** en dobles se muestra solo el apellido de la pareja (`@unless($dobles), nombre@endunless`); la tabla de posiciones deja que el nombre baje de línea (`leading-tight`) y en el admin oculta SG/SP/GG/GP en celular (`hidden sm:table-cell`). Con 3 zonas se muestra la tabla "Mejor segundo" (provisoria hasta completar las zonas). En listados públicos dice "Dobles" en vez de "Master".
+
 ### Ranking — caché
 
 `RankingService::calcular()` cachea el resultado **5 minutos** (clave por combinación de filtros) y **nadie la invalida** al cargar resultados (ni `MasterDetalle` ni `DrawBracket`). Si una columna/puntos nuevos "no aparecen" en Ranking (admin o público) justo después de cargar una final, primero esperar 5 minutos y recargar antes de sospechar un bug — la tabla `rankings` normalmente ya está bien. No hay columna que marque filas de Master: se distinguen por `torneos.tipo = 'master'`, y en pantalla el Master es una columna más con el nombre del torneo. Los desempates por sets/games solo cuentan partidos de draws (`Partido`), no de Master.
+
+**Categorías sin ranking / dobles:** `categorias.sin_ranking` hace que `recalcularRankingMaster()` borre las filas y no escriba puntos, y saca la categoría de los filtros del Ranking (admin, público y panel de Bienvenida; el panel Torneos la sigue mostrando). No se puede marcar si la categoría ya tiene filas en `rankings`. `categorias.es_dobles` marca que cada jugador es una pareja: en la inscripción (individual y masiva) una categoría de dobles solo lista parejas y las demás solo jugadores individuales (validado también en el servidor).
 
 ### Authentication
 
@@ -75,6 +91,8 @@ Routes are in `routes/web.php`. Admin routes use the `admin.auth` middleware ali
 Push to `main` → GitHub Actions calls a Ferozo webhook (`FEROZO_WEBHOOK_URL` secret) which pulls and deploys on the hosting server. **Hoy el webhook no dispara solo: después del push el deploy se hace a mano (ver "Estado conocido" abajo).**
 
 **IMPORTANTE:** Ferozo no tiene Node.js, así que **cualquier clase de Tailwind nueva (no solo las ya usadas antes en el proyecto) necesita `npm run build` antes de commitear**, o simplemente no existe en producción — el sitio sirve el CSS ya compilado en `public/build`, no lo genera al vuelo. Un layout roto/sin estilo tras un deploy que "corrió bien" suele ser justamente esto, no un bug de lógica.
+
+**OJO — `resources/css/app.css` también escanea `storage/framework/views/*.php`** (vistas compiladas, incluidas las de paquetes). Si se corre `php artisan view:clear` antes de `npm run build`, el CSS sale más chico y **pierde clases que hoy están en producción**. Antes de compilar: `php artisan view:cache`, y después comparar que el CSS nuevo no haya perdido clases respecto del commiteado.
 
 **IMPORTANTE:** Nunca hacer `git push --force` a `main`. El webhook solo ejecuta `git pull` en el servidor — un force push rompe el estado git de Ferozo y la próxima actualización falla silenciosamente. Si el servidor queda desincronizado, los archivos deben actualizarse manualmente vía el Administrador de Archivos de DonWeb.
 

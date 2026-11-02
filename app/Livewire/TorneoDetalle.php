@@ -39,6 +39,7 @@ class TorneoDetalle extends Component
 
     // Para el master
     public string $masterCategoriaId = '';
+    public string $masterZonas = '2'; // solo categorías de dobles (2 a 4)
 
     protected function rules(): array
     {
@@ -166,15 +167,25 @@ class TorneoDetalle extends Component
             'masterCategoriaId' => 'required|exists:categorias,id',
         ]);
 
+        $dobles = (bool) Categoria::find($this->masterCategoriaId)?->es_dobles;
+        if ($dobles) {
+            $this->validate(['masterZonas' => 'required|in:2,3,4']);
+        }
+
         $master = Master::updateOrCreate(
             ['torneo_id' => $this->torneo->id, 'categoria_id' => $this->masterCategoriaId],
             ['estado' => 'pendiente']
         );
 
-        $master->crearGrupos();
+        if ($dobles) {
+            $master->crearGrupos((int) $this->masterZonas);
+            session()->flash('ok', "Master de dobles creado con {$this->masterZonas} zonas. Asigná las parejas a cada zona (3 o 4 por zona).");
+        } else {
+            $master->crearGrupos();
+            session()->flash('ok', 'Master creado. Asigná los jugadores a cada zona.');
+        }
 
-        session()->flash('ok', 'Master creado. Asigná los jugadores a cada zona.');
-        $this->reset(['masterCategoriaId']);
+        $this->reset(['masterCategoriaId', 'masterZonas']);
     }
 
     public function inscribirMasivo(): void
@@ -301,7 +312,8 @@ class TorneoDetalle extends Component
 
         $categorias = Categoria::orderBy('nombre')->get();
         $draws = $this->torneo->draws()->with(['categoria'])->get();
-        $masters = Master::with('categoria')->where('torneo_id', $this->torneo->id)->get();
+        $masters = Master::with('categoria')->withCount('grupos')->where('torneo_id', $this->torneo->id)->get();
+        $masterEsDobles = (bool) $categorias->firstWhere('id', (int) $this->masterCategoriaId)?->es_dobles;
 
         // IDs de jugadores ya inscriptos en la categoría masiva seleccionada
         $yaInscriptosEnCategoria = $this->categoriaMasiva
@@ -313,7 +325,7 @@ class TorneoDetalle extends Component
 
         return view('livewire.torneo-detalle', compact(
             'inscripciones', 'jugadoresDisponibles', 'jugadoresMasiva',
-            'categorias', 'draws', 'masters', 'yaInscriptosEnCategoria'
+            'categorias', 'draws', 'masters', 'yaInscriptosEnCategoria', 'masterEsDobles'
         ))->layout('layouts.app');
     }
 }

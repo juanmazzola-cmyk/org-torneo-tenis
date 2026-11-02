@@ -4,10 +4,20 @@
         <div>
             <a href="{{ route('torneo.detalle', $torneo->id) }}"
                class="text-sm text-green-700 hover:underline mb-1 inline-block">← Volver al torneo</a>
+            @if($dobles)
+            <h1 class="text-2xl font-bold text-gray-800">
+                Dobles — {{ $torneo->nombre }} — Categoría {{ $master->categoria->nombre }}
+            </h1>
+            <p class="text-sm text-gray-500">
+                {{ $grupos->sum(fn($g) => $g->jugadoresGrupo->whereNull('reemplaza_a_id')->count()) }} parejas
+                · {{ $grupos->count() }} zonas · Round Robin
+            </p>
+            @else
             <h1 class="text-2xl font-bold text-gray-800">
                 Master — {{ $torneo->nombre }} — Categoría {{ $master->categoria->nombre }}
             </h1>
             <p class="text-sm text-gray-500">8 jugadores · 2 zonas · Round Robin</p>
+            @endif
         </div>
     </div>
 
@@ -32,9 +42,13 @@
             $pos            = $posiciones[$grupo->id] ?? [];
             $hayPartidos    = $grupo->partidos->isNotEmpty();
             $tieneRetirado  = $grupo->jugadoresGrupo->contains('retirado', true);
-            $j1Bloqueada    = $tieneRetirado
+            // Zona de 3 (dobles): 3 partidos de calendario fijo, J1 nunca se bloquea
+            $esDeTres       = $grupo->partidos->count() === 3;
+            $titulares      = $grupo->jugadoresGrupo->whereNull('reemplaza_a_id')->count();
+            $j1Bloqueada    = !$esDeTres && $tieneRetirado
                 && $grupo->partidos->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->isNotEmpty();
             $maxPos         = max(4, $jugadoresGrupo->keys()->max() ?? 0);
+            $descansos      = $esDeTres ? $grupo->descansos() : [];
         @endphp
 
         <div class="bg-white rounded-xl shadow p-5">
@@ -55,7 +69,7 @@
                             <span class="text-xs font-bold text-gray-400 w-4">{{ $pos_num }}</span>
                             @if($jg)
                                 <span class="text-sm font-medium {{ $jg->retirado ? 'text-gray-500 line-through' : 'text-gray-800' }}">
-                                    {{ $jg->jugador->apellido }}, {{ $jg->jugador->nombre }}
+                                    {{ $jg->jugador->apellido }}@unless($dobles), {{ $jg->jugador->nombre }}@endunless
                                 </span>
                                 @if($jg->retirado)
                                     <span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Retirado</span>
@@ -68,7 +82,7 @@
                             @endif
                         </div>
                         <div class="flex items-center gap-1">
-                            @if(!$tieneRetirado)
+                            @if(!$tieneRetirado && !$esDeTres)
                             <button wire:click="abrirAsignar({{ $grupo->id }}, {{ $pos_num }})"
                                     class="text-xs text-green-600 hover:text-green-800 font-medium px-2 py-1 rounded hover:bg-green-50 transition">
                                 {{ $jg ? 'Cambiar' : 'Asignar' }}
@@ -93,6 +107,12 @@
                         class="mt-3 w-full text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition font-medium">
                     Generar Partidos
                 </button>
+                @elseif($dobles && $titulares === 3 && !$hayPartidos)
+                <button wire:click="generarPartidos({{ $grupo->id }})"
+                        wire:confirm="¿Generar los partidos de una zona de 3 parejas? Después, para cambiar una pareja hay que quitarla y volver a asignarla."
+                        class="mt-3 w-full text-sm bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition font-medium">
+                    Generar Partidos (zona de 3)
+                </button>
                 @endif
             </div>
 
@@ -104,6 +124,9 @@
                 @php $matchesJornada = $partidos->get($jornada, collect()); @endphp
                 <div class="mb-3">
                     <div class="text-xs font-bold text-gray-500 uppercase mb-1">Jornada {{ $jornada }}</div>
+                    @if(isset($descansos[$jornada]))
+                    <div class="text-xs text-gray-400 italic mb-1">Descansa: {{ $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido }}</div>
+                    @endif
                     @foreach($matchesJornada as $partido)
                     <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                         <div class="flex-1 min-w-0">
@@ -165,20 +188,25 @@
                                 <th class="px-1 py-1.5 text-center font-medium">PG</th>
                                 <th class="px-1 py-1.5 text-center font-medium">PP</th>
                                 <th class="px-1 py-1.5 text-center font-medium">DIF</th>
-                                <th class="px-1 py-1.5 text-center font-medium">SG</th>
-                                <th class="px-1 py-1.5 text-center font-medium">SP</th>
+                                {{-- En dobles, SG/SP/GG/GP se ocultan en celular para que la tabla entre --}}
+                                <th class="px-1 py-1.5 text-center font-medium{{ $dobles ? ' hidden sm:table-cell' : '' }}">SG</th>
+                                <th class="px-1 py-1.5 text-center font-medium{{ $dobles ? ' hidden sm:table-cell' : '' }}">SP</th>
                                 <th class="px-1 py-1.5 text-center font-medium">DS</th>
-                                <th class="px-1 py-1.5 text-center font-medium">GG</th>
-                                <th class="px-1 py-1.5 text-center font-medium">GP</th>
+                                <th class="px-1 py-1.5 text-center font-medium{{ $dobles ? ' hidden sm:table-cell' : '' }}">GG</th>
+                                <th class="px-1 py-1.5 text-center font-medium{{ $dobles ? ' hidden sm:table-cell' : '' }}">GP</th>
                                 <th class="px-1 py-1.5 text-center font-medium">DG</th>
                                 <th class="px-2 py-1.5 text-center font-bold">PTS</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             @forelse($pos as $i => $s)
-                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($i === 0 ? 'bg-yellow-50' : ($i === 1 ? 'bg-gray-50' : '')) }} hover:bg-gray-50">
+                            @php
+                                // En dobles se resaltan los que clasifican de verdad (1°, y 2° o mejor segundo según las zonas)
+                                $clasifica = $dobles ? in_array($s['jugador']->id, $clasificacion['marcados']) : $i < 2;
+                            @endphp
+                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($clasifica && $i === 0 ? 'bg-yellow-50' : ($clasifica ? 'bg-gray-50' : '')) }} hover:bg-gray-50">
                                 <td class="px-2 py-1.5 font-bold text-gray-500">{{ $s['retirado'] ? 'R' : $i + 1 }}</td>
-                                <td class="px-2 py-1.5 font-semibold text-gray-800 whitespace-nowrap">
+                                <td class="px-2 py-1.5 font-semibold text-gray-800 {{ $dobles ? 'leading-tight' : 'whitespace-nowrap' }}">
                                     {{ $s['jugador']->apellido }}
                                     @if($s['retirado'])
                                         <span class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">Retirado</span>
@@ -190,13 +218,13 @@
                                 <td class="px-1 py-1.5 text-center {{ $s['dif_part'] > 0 ? 'text-green-600' : ($s['dif_part'] < 0 ? 'text-red-500' : 'text-gray-500') }} font-medium">
                                     {{ $s['dif_part'] > 0 ? '+' : '' }}{{ $s['dif_part'] }}
                                 </td>
-                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['sg'] }}</td>
-                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['sp'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600{{ $dobles ? ' hidden sm:table-cell' : '' }}">{{ $s['sg'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600{{ $dobles ? ' hidden sm:table-cell' : '' }}">{{ $s['sp'] }}</td>
                                 <td class="px-1 py-1.5 text-center {{ $s['dif_set'] > 0 ? 'text-green-600' : ($s['dif_set'] < 0 ? 'text-red-500' : 'text-gray-500') }} font-medium">
                                     {{ $s['dif_set'] > 0 ? '+' : '' }}{{ $s['dif_set'] }}
                                 </td>
-                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['gg'] }}</td>
-                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['gp'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600{{ $dobles ? ' hidden sm:table-cell' : '' }}">{{ $s['gg'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600{{ $dobles ? ' hidden sm:table-cell' : '' }}">{{ $s['gp'] }}</td>
                                 <td class="px-1 py-1.5 text-center {{ $s['dif_game'] > 0 ? 'text-green-600' : ($s['dif_game'] < 0 ? 'text-red-500' : 'text-gray-500') }} font-medium">
                                     {{ $s['dif_game'] > 0 ? '+' : '' }}{{ $s['dif_game'] }}
                                 </td>
@@ -239,9 +267,53 @@
                 @endif
             </div>
 
+            @if($dobles && $clasificacion['segundos'])
+            {{-- Dobles con 3 zonas: comparación de segundos por promedios --}}
+            <div class="mb-5">
+                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Mejor segundo
+                    @unless($clasificacion['completo'])<span class="text-xs font-normal normal-case text-gray-400">(provisorio)</span>@endunless
+                </h3>
+                <p class="text-xs text-gray-400 mb-2">Puntos por partido jugado, después % de sets y % de games. El W.O. cuenta como 6-0 6-0.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-green-700 text-white">
+                                <th class="px-2 py-1.5 text-left font-medium">Pareja</th>
+                                <th class="px-2 py-1.5 text-left font-medium">Zona</th>
+                                <th class="px-1 py-1.5 text-center font-medium">PJ</th>
+                                <th class="px-1 py-1.5 text-center font-medium">Pts/PJ</th>
+                                <th class="px-1 py-1.5 text-center font-medium">% Sets</th>
+                                <th class="px-1 py-1.5 text-center font-medium">% Games</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($clasificacion['segundos'] as $s)
+                            <tr class="{{ !empty($s['mejor']) ? 'bg-yellow-50' : '' }}">
+                                <td class="px-2 py-1.5 font-semibold text-gray-800 leading-tight">
+                                    {{ $s['jugador']->apellido }}
+                                    @if(!empty($s['mejor']))<span class="text-green-700">✓</span>@endif
+                                </td>
+                                <td class="px-2 py-1.5 text-gray-600">{{ $s['nombre_zona'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['pj'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['prom_pts'], 2, ',', '.') }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['pct_sets'], 1, ',', '.') }}%</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['pct_games'], 1, ',', '.') }}%</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             @if($faseFinal->isEmpty())
                 <p class="text-gray-400 text-sm text-center py-4">
+                    @if($dobles)
+                    Una vez que todas las zonas estén completas, generá la fase final.
+                    @else
                     Una vez que ambas zonas estén completas, generá la fase final.
+                    @endif
                 </p>
             @else
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -261,7 +333,7 @@
                                         <span class="w-4"></span>
                                     @endif
                                     <span class="text-sm {{ $match->ganador_id === $match->jugador1_id ? 'font-bold text-gray-900' : 'text-gray-600' }}">
-                                        {{ $match->jugador1->apellido }}, {{ $match->jugador1->nombre }}
+                                        {{ $match->jugador1->apellido }}@unless($dobles), {{ $match->jugador1->nombre }}@endunless
                                     </span>
                                 </div>
                                 <div class="text-xs text-gray-400 text-center">vs</div>
@@ -272,7 +344,7 @@
                                         <span class="w-4"></span>
                                     @endif
                                     <span class="text-sm {{ $match->ganador_id === $match->jugador2_id ? 'font-bold text-gray-900' : 'text-gray-600' }}">
-                                        {{ $match->jugador2->apellido }}, {{ $match->jugador2->nombre }}
+                                        {{ $match->jugador2->apellido }}@unless($dobles), {{ $match->jugador2->nombre }}@endunless
                                     </span>
                                 </div>
                             </div>
@@ -302,7 +374,7 @@
                     @endforeach
                 </div>
 
-                @if($master->estado === 'finalizado')
+                @if($master->estado === 'finalizado' && !$master->categoria->sin_ranking)
                 <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700 text-center">
                     Puntos otorgados: Campeón 100 · Finalista 80 · Semifinalistas 60 · No clasificados 40
                 </div>
@@ -333,7 +405,7 @@
                 @if($yaAsignado)
                     <div class="flex items-center gap-3 px-3 py-2.5 opacity-40 bg-gray-50 cursor-not-allowed">
                         <span class="text-sm text-gray-700">
-                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="font-medium">{{ $j->apellido }}</span>@unless($dobles), {{ $j->nombre }}@endunless
                             <span class="text-xs text-gray-400 ml-1">(ya asignado)</span>
                         </span>
                     </div>
@@ -342,7 +414,7 @@
                             class="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-green-50 active:bg-green-100 transition cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
                         <span class="text-sm text-gray-800">
-                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="font-medium">{{ $j->apellido }}</span>@unless($dobles), {{ $j->nombre }}@endunless
                         </span>
                     </button>
                 @endif
@@ -368,7 +440,7 @@
              style="max-height: 90vh;">
             <h3 class="text-lg font-bold text-gray-800 mb-1 shrink-0">Retirar por lesión</h3>
             <p class="text-sm text-gray-500 mb-3 shrink-0">
-                <span class="font-medium text-gray-700">{{ $lesionado?->apellido }}, {{ $lesionado?->nombre }}</span>
+                <span class="font-medium text-gray-700">{{ $lesionado?->apellido }}@unless($dobles), {{ $lesionado?->nombre }}@endunless</span>
                 queda como retirado (sus partidos jugados se mantienen).
                 Elegí el suplente que ocupa su lugar en los partidos pendientes.
             </p>
@@ -386,7 +458,7 @@
                 @if($yaAsignado)
                     <div class="flex items-center gap-3 px-3 py-2.5 opacity-40 bg-gray-50 cursor-not-allowed">
                         <span class="text-sm text-gray-700">
-                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="font-medium">{{ $j->apellido }}</span>@unless($dobles), {{ $j->nombre }}@endunless
                             <span class="text-xs text-gray-400 ml-1">(ya en una zona)</span>
                         </span>
                     </div>
@@ -396,7 +468,7 @@
                             class="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-green-50 active:bg-green-100 transition cursor-pointer">
                         <span class="w-2 h-2 rounded-full bg-green-400 shrink-0"></span>
                         <span class="text-sm text-gray-800">
-                            <span class="font-medium">{{ $j->apellido }}</span>, {{ $j->nombre }}
+                            <span class="font-medium">{{ $j->apellido }}</span>@unless($dobles), {{ $j->nombre }}@endunless
                         </span>
                     </button>
                 @endif
@@ -463,10 +535,10 @@
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                         <option value="">Seleccionar...</option>
                         <option value="{{ $partidoActivo->jugador1_id }}">
-                            {{ $partidoActivo->jugador1->apellido }}, {{ $partidoActivo->jugador1->nombre }}
+                            {{ $partidoActivo->jugador1->apellido }}@unless($dobles), {{ $partidoActivo->jugador1->nombre }}@endunless
                         </option>
                         <option value="{{ $partidoActivo->jugador2_id }}">
-                            {{ $partidoActivo->jugador2->apellido }}, {{ $partidoActivo->jugador2->nombre }}
+                            {{ $partidoActivo->jugador2->apellido }}@unless($dobles), {{ $partidoActivo->jugador2->nombre }}@endunless
                         </option>
                     </select>
                     @error('ganadorId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -532,10 +604,10 @@
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                         <option value="">Seleccionar...</option>
                         <option value="{{ $finalActiva->jugador1_id }}">
-                            {{ $finalActiva->jugador1->apellido }}, {{ $finalActiva->jugador1->nombre }}
+                            {{ $finalActiva->jugador1->apellido }}@unless($dobles), {{ $finalActiva->jugador1->nombre }}@endunless
                         </option>
                         <option value="{{ $finalActiva->jugador2_id }}">
-                            {{ $finalActiva->jugador2->apellido }}, {{ $finalActiva->jugador2->nombre }}
+                            {{ $finalActiva->jugador2->apellido }}@unless($dobles), {{ $finalActiva->jugador2->nombre }}@endunless
                         </option>
                     </select>
                     @error('ganadorId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -551,12 +623,44 @@
     </div>
     @endif
 
+    {{-- ══ Modal Empate Mejor Segundo (dobles) ═════════════════════════ --}}
+    @if($modalEmpate)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
+        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Empate en el mejor segundo</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Estas parejas empatan en puntos por partido, % de sets y % de games.
+                Definí por sorteo y elegí cuál clasifica.
+            </p>
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                @foreach($empateCandidatos as $s)
+                <button wire:click="generarFaseFinal({{ $s['jugador']->id }})"
+                        wire:confirm="¿Clasifica {{ $s['jugador']->apellido }} como mejor segundo?"
+                        class="w-full text-left flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-green-50 transition cursor-pointer">
+                    <span class="text-sm font-medium text-gray-800">{{ $s['jugador']->apellido }}</span>
+                    <span class="text-xs text-gray-500 shrink-0">{{ $s['nombre_zona'] }}</span>
+                </button>
+                @endforeach
+            </div>
+            <div class="flex justify-end mt-4">
+                <button wire:click="cerrarModales"
+                        class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- ══ Modal Confirmar Quitar Jugador ══════════════════════════════ -->
     @if($confirmQuitarJugador)
     <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
             <h3 class="text-lg font-bold text-gray-800 mb-2">¿Quitar jugador?</h3>
+            @if($dobles)
+            <p class="text-gray-600 mb-6 text-sm">Se borrarán todos los partidos de esta zona y habrá que volver a generarlos (3 o 4 parejas).</p>
+            @else
             <p class="text-gray-600 mb-6 text-sm">Se borrarán todos los partidos de esta zona y habrá que reasignar los 4 jugadores.</p>
+            @endif
             <div class="flex gap-3 justify-end">
                 <button wire:click="cancelarQuitarJugador"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>

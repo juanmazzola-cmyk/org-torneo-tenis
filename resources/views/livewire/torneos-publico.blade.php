@@ -41,7 +41,7 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="text-white font-semibold text-sm">
                                         ⭐ Categoría {{ $master->categoria->nombre }}
-                                        <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
+                                        <span class="text-yellow-300 text-xs font-normal ml-1">{{ $master->categoria->es_dobles ? 'Dobles' : 'Master' }}</span>
                                     </p>
                                 </div>
                                 <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate

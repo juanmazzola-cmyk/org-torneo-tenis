@@ -340,11 +340,15 @@
         <!-- Formulario crear master -->
         <div class="bg-white rounded-xl shadow p-6">
             <h2 class="text-lg font-semibold mb-4 text-gray-700">Crear Master</h2>
+            @if($masterEsDobles)
+            <p class="text-xs text-gray-500 mb-4">Dobles · 6 a 16 parejas · 2 a 4 zonas de 3 o 4 · Round Robin</p>
+            @else
             <p class="text-xs text-gray-500 mb-4">8 jugadores · 2 zonas de 4 · Round Robin</p>
+            @endif
             <form wire:submit="crearMaster" class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Categoría *</label>
-                    <select wire:model="masterCategoriaId"
+                    <select wire:model.live="masterCategoriaId"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
                         <option value="">Seleccionar...</option>
                         @foreach($categorias as $cat)
@@ -353,6 +357,18 @@
                     </select>
                     @error('masterCategoriaId') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
+                @if($masterEsDobles)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad de zonas *</label>
+                    <select wire:model="masterZonas"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="2">2 zonas (clasifican 1° y 2°)</option>
+                        <option value="3">3 zonas (1° de cada una + mejor 2°)</option>
+                        <option value="4">4 zonas (1° de cada una)</option>
+                    </select>
+                    @error('masterZonas') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                @endif
                 <p class="text-xs text-gray-500">⚠️ Si ya existe un master para esa categoría, se reiniciará.</p>
                 <button type="submit"
                         class="w-full bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-800 transition font-medium text-sm">
@@ -367,7 +383,11 @@
                 <div class="bg-white rounded-xl shadow p-4 flex items-center justify-between">
                     <div>
                         <span class="font-bold text-gray-800 text-lg">Categoría {{ $master->categoria->nombre }}</span>
+                        @if($master->categoria->es_dobles)
+                        <span class="ml-3 text-sm text-gray-500">Dobles · {{ $master->grupos_count }} zonas</span>
+                        @else
                         <span class="ml-3 text-sm text-gray-500">Master · 2 zonas de 4</span>
+                        @endif
                         <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-medium
                             {{ $master->estado === 'finalizado' ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700' }}">
                             {{ ucfirst($master->estado) }}

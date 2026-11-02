@@ -28,10 +28,19 @@ class MasterGrupo extends Model
             ->orderBy('orden');
     }
 
-    /** Genera los 6 partidos del round robin una vez asignados los 4 jugadores */
+    /**
+     * Genera los 6 partidos del round robin una vez asignados los 4 jugadores.
+     * En dobles también se admite una zona de 3 parejas (3 partidos, ver generarPartidosDeTres()).
+     */
     public function generarPartidos(): void
     {
         $jugadores = $this->jugadoresGrupo()->with('jugador')->orderBy('posicion')->get();
+
+        if ($jugadores->count() === 3 && $this->master->categoria->es_dobles) {
+            $this->generarPartidosDeTres($jugadores->values());
+            return;
+        }
+
         if ($jugadores->count() !== 4) return;
 
         $this->partidos()->delete();
@@ -64,6 +73,55 @@ class MasterGrupo extends Model
                 ]);
             }
         }
+    }
+
+    /**
+     * Zona de 3 (solo dobles): calendario fijo J1 1-2, J2 2-3, J3 1-3 (en orden de posición),
+     * descansa una pareja por jornada. No depende de resultados, así que no hay cruces que rearmar.
+     */
+    private function generarPartidosDeTres($jugadores): void
+    {
+        $this->partidos()->delete();
+
+        foreach ([1 => [0, 1], 2 => [1, 2], 3 => [0, 2]] as $jornada => [$a, $b]) {
+            MasterPartido::create([
+                'grupo_id'    => $this->id,
+                'jornada'     => $jornada,
+                'orden'       => 1,
+                'jugador1_id' => $jugadores[$a]->jugador_id,
+                'jugador2_id' => $jugadores[$b]->jugador_id,
+            ]);
+        }
+    }
+
+    /**
+     * Zona de 3 parejas (dobles). Se cuenta por partidos y NO por filas de master_jugadores_grupo:
+     * con un retiro, una zona de 3 pasa a tener 4 filas (lesionado + suplente).
+     */
+    public function esDeTres(): bool
+    {
+        return $this->partidos()->count() === 3;
+    }
+
+    /** Zona de 3: [jornada => jugador_id que descansa], con el suplente en lugar del lesionado */
+    public function descansos(): array
+    {
+        if (!$this->esDeTres()) return [];
+
+        $mapa = $this->reemplazos();
+        $real = fn($id) => $mapa[$id] ?? $id;
+        $porJornada = $this->partidos()->get()->keyBy('jornada')
+            ->map(fn($p) => [$real($p->jugador1_id), $real($p->jugador2_id)]);
+
+        // Descansa en una jornada quien juega en las otras dos
+        $res = [];
+        foreach ([1, 2, 3] as $jornada) {
+            $otras = $porJornada->except($jornada)->values();
+            if ($otras->count() !== 2) continue;
+            $comun = array_values(array_intersect($otras[0], $otras[1]));
+            if ($comun) $res[$jornada] = $comun[0];
+        }
+        return $res;
     }
 
     /** Asigna jugadores a jornadas 2 y 3 según resultados de jornada 1 */
@@ -138,19 +196,27 @@ class MasterGrupo extends Model
     public function jornada1Completa(): bool
     {
         $j1 = $this->partidos()->where('jornada', 1)->get();
-        return $j1->count() === 2 && $j1->every(fn($p) => $p->ganador_id);
+        $esperados = $this->esDeTres() ? 1 : 2;
+        return $j1->count() === $esperados && $j1->every(fn($p) => $p->ganador_id);
     }
 
-    /** Con un retirado en la zona, J1 queda congelada si ya hay resultados en J2/J3 */
+    /**
+     * Con un retirado en la zona, J1 queda congelada si ya hay resultados en J2/J3.
+     * En una zona de 3 no: J2/J3 no dependen de J1.
+     */
     public function jornada1Bloqueada(): bool
     {
-        return $this->tieneRetirado()
+        return !$this->esDeTres()
+            && $this->tieneRetirado()
             && $this->partidos()->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->exists();
     }
 
     /** Limpia jornadas 2 y 3 (cuando se anula un resultado de jornada 1) */
     public function limpiarCruces(): void
     {
+        // En una zona de 3 los cruces son fijos: limpiarlos dejaría J2/J3 sin jugadores para siempre
+        if ($this->esDeTres()) return;
+
         $this->partidos()->whereIn('jornada', [2, 3])->update([
             'jugador1_id' => null,
             'jugador2_id' => null,
@@ -163,7 +229,7 @@ class MasterGrupo extends Model
     public function estaCompleto(): bool
     {
         $total = $this->partidos()->count();
-        if ($total < 6) return false;
+        if ($total < ($total === 3 ? 3 : 6)) return false; // zona de 3 (dobles): 3 partidos
         return $this->partidos()->whereNull('ganador_id')->count() === 0;
     }
 
@@ -233,6 +299,69 @@ class MasterGrupo extends Model
         });
 
         return array_values($stats);
+    }
+
+    /**
+     * Promedios para comparar parejas de zonas de distinto tamaño (mejor segundo en dobles):
+     * puntos por partido jugado, % de sets ganados y % de games ganados, con TODOS los partidos
+     * jugados (con un retiro, cada uno con los que jugó). El W.O. cuenta como 6-0 6-0 para el
+     * ganador solo acá; la tabla de zona (calcularPosiciones) no cambia.
+     * Devuelve [jugador_id => [pj, pts, sg, sp, gg, gp, prom_pts, pct_sets, pct_games]].
+     */
+    public function promedios(): array
+    {
+        $stats = [];
+        foreach ($this->jugadoresGrupo()->get() as $jg) {
+            $stats[$jg->jugador_id] = ['pj' => 0, 'pts' => 0, 'sg' => 0, 'sp' => 0, 'gg' => 0, 'gp' => 0];
+        }
+
+        foreach ($this->partidos()->whereNotNull('ganador_id')->get() as $partido) {
+            $j1 = $partido->jugador1_id;
+            $j2 = $partido->jugador2_id;
+            if (!isset($stats[$j1]) || !isset($stats[$j2])) continue;
+
+            // El resultado se guarda con el ganador primero
+            [$sg, $sp, $gg, $gp] = $partido->resultado === 'W.O.'
+                ? [2, 0, 12, 0]
+                : $this->parseResultado($partido->resultado);
+
+            $ganador  = $partido->ganador_id == $j1 ? $j1 : $j2;
+            $perdedor = $ganador == $j1 ? $j2 : $j1;
+
+            $stats[$ganador]['pj']++;  $stats[$ganador]['pts'] += 2;
+            $stats[$ganador]['sg'] += $sg;  $stats[$ganador]['sp'] += $sp;
+            $stats[$ganador]['gg'] += $gg;  $stats[$ganador]['gp'] += $gp;
+
+            $stats[$perdedor]['pj']++;
+            $stats[$perdedor]['sg'] += $sp; $stats[$perdedor]['sp'] += $sg;
+            $stats[$perdedor]['gg'] += $gp; $stats[$perdedor]['gp'] += $gg;
+        }
+
+        foreach ($stats as &$s) {
+            $s['prom_pts']  = $s['pj'] ? $s['pts'] / $s['pj'] : 0;
+            $s['pct_sets']  = ($s['sg'] + $s['sp']) ? 100 * $s['sg'] / ($s['sg'] + $s['sp']) : 0;
+            $s['pct_games'] = ($s['gg'] + $s['gp']) ? 100 * $s['gg'] / ($s['gg'] + $s['gp']) : 0;
+        }
+        unset($s);
+
+        return $stats;
+    }
+
+    /**
+     * Orden descendente por pts/PJ, después % sets y % games. Compara las fracciones
+     * multiplicando en cruz (sin decimales) para que un empate real dé exactamente 0.
+     */
+    public static function compararPromedios(array $a, array $b): int
+    {
+        $comparar = function (int $na, int $da, int $nb, int $db): int {
+            if (!$da) [$na, $da] = [0, 1];
+            if (!$db) [$nb, $db] = [0, 1];
+            return $nb * $da <=> $na * $db;
+        };
+
+        return $comparar($a['pts'], $a['pj'], $b['pts'], $b['pj'])
+            ?: $comparar($a['sg'], $a['sg'] + $a['sp'], $b['sg'], $b['sg'] + $b['sp'])
+            ?: $comparar($a['gg'], $a['gg'] + $a['gp'], $b['gg'], $b['gg'] + $b['gp']);
     }
 
     private function parseResultado(?string $resultado): array

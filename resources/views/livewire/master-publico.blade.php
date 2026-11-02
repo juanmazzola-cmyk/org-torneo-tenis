@@ -10,7 +10,7 @@
             </a>
             <div class="min-w-0">
                 <h1 class="text-white font-bold text-base truncate">⭐ {{ $master->torneo->nombre }}</h1>
-                <p class="text-yellow-300 text-xs">Master — Categoría {{ $master->categoria->nombre }}</p>
+                <p class="text-yellow-300 text-xs">{{ $dobles ? 'Dobles' : 'Master' }} — Categoría {{ $master->categoria->nombre }}</p>
             </div>
         </div>
     </div>
@@ -26,6 +26,7 @@
             $partidos       = $grupo->partidos->groupBy('jornada');
             $pos            = $posiciones[$grupo->id] ?? [];
             $hayPartidos    = $grupo->partidos->whereNotNull('ganador_id')->isNotEmpty();
+            $descansos      = $dobles && $grupo->partidos->count() === 3 ? $grupo->descansos() : [];
         @endphp
 
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden">
@@ -41,6 +42,9 @@
                 @if($matchesJornada->isNotEmpty())
                 <div class="mb-2">
                     <p class="text-white/50 text-xs mb-1">Jornada {{ $jornada }}</p>
+                    @if(isset($descansos[$jornada]))
+                    <p class="text-white/40 text-xs italic mb-1">Descansa: {{ $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido }}</p>
+                    @endif
                     @foreach($matchesJornada as $partido)
                     @if($partido->jugador1_id && $partido->jugador2_id)
                     <div class="flex items-center justify-between py-1.5 border-b border-white/10 last:border-0">
@@ -90,11 +94,15 @@
                         </thead>
                         <tbody>
                             @foreach($pos as $i => $s)
-                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($i < 2 ? 'bg-white/10' : '') }} border-t border-white/10">
+                            @php
+                                // En dobles el ✓ marca a los que clasifican de verdad según la cantidad de zonas
+                                $clasifica = $dobles ? in_array($s['jugador']->id, $clasificacion['marcados']) : $i < 2;
+                            @endphp
+                            <tr class="{{ $s['retirado'] ? 'opacity-60' : ($clasifica ? 'bg-white/10' : '') }} border-t border-white/10">
                                 <td class="px-1 py-1.5 text-white/60 font-bold">
-                                    {{ $s['retirado'] ? 'R' : ($i < 2 ? '✓' : ($i + 1)) }}
+                                    {{ $s['retirado'] ? 'R' : ($clasifica ? '✓' : ($i + 1)) }}
                                 </td>
-                                <td class="px-2 py-1.5 font-semibold text-white whitespace-nowrap">
+                                <td class="px-2 py-1.5 font-semibold text-white {{ $dobles ? 'leading-tight' : 'whitespace-nowrap' }}">
                                     {{ $s['jugador']->apellido }}
                                     @if($s['retirado'])
                                         <span class="text-xs bg-red-500/30 text-red-200 px-1.5 py-0.5 rounded font-medium">Retirado</span>
@@ -118,11 +126,60 @@
                         </tbody>
                     </table>
                 </div>
+                @if($dobles && $grupos->count() === 3)
+                <p class="text-white/40 text-xs mt-1">✓ Clasifica a Fase Final (1° de cada zona + mejor segundo)</p>
+                @elseif($dobles && $grupos->count() === 4)
+                <p class="text-white/40 text-xs mt-1">✓ Clasifica a Fase Final (1° de cada zona)</p>
+                @else
                 <p class="text-white/40 text-xs mt-1">✓ Clasifica a Fase Final</p>
+                @endif
             </div>
             @endif
         </div>
         @endforeach
+
+        {{-- Dobles con 3 zonas: comparación de segundos por promedios --}}
+        @if($dobles && $clasificacion['segundos'])
+        <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden">
+            <div class="bg-white/10 px-4 py-2.5 border-b border-white/10">
+                <h2 class="text-white font-bold text-base">
+                    Mejor segundo
+                    @unless($clasificacion['completo'])<span class="text-white/50 text-xs font-normal">(provisorio)</span>@endunless
+                </h2>
+            </div>
+            <div class="px-4 py-3">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-white/10 text-white/70">
+                                <th class="px-2 py-1.5 text-left">Pareja</th>
+                                <th class="px-1 py-1.5 text-center">PJ</th>
+                                <th class="px-1 py-1.5 text-center">Pts/PJ</th>
+                                <th class="px-1 py-1.5 text-center">%Sets</th>
+                                <th class="px-1 py-1.5 text-center">%Games</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($clasificacion['segundos'] as $s)
+                            <tr class="{{ !empty($s['mejor']) ? 'bg-white/10' : '' }} border-t border-white/10">
+                                <td class="px-2 py-1.5 font-semibold text-white leading-tight">
+                                    {{ $s['jugador']->apellido }}
+                                    @if(!empty($s['mejor']))<span class="text-green-300">✓</span>@endif
+                                    <span class="block text-white/40 font-normal">{{ $s['nombre_zona'] }}</span>
+                                </td>
+                                <td class="px-1 py-1.5 text-center text-white/70">{{ $s['pj'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-white/70">{{ number_format($s['prom_pts'], 2, ',', '.') }}</td>
+                                <td class="px-1 py-1.5 text-center text-white/70">{{ number_format($s['pct_sets'], 1, ',', '.') }}%</td>
+                                <td class="px-1 py-1.5 text-center text-white/70">{{ number_format($s['pct_games'], 1, ',', '.') }}%</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-white/40 text-xs mt-1">Puntos por partido jugado, después % de sets y % de games. El W.O. cuenta como 6-0 6-0.</p>
+            </div>
+        </div>
+        @endif
 
         <!-- Fase Final -->
         @if($faseFinal->isNotEmpty())
@@ -142,14 +199,14 @@
                             <div class="flex items-center gap-2">
                                 @if($match->ganador_id === $match->jugador1_id)<span class="text-yellow-400 text-xs">🥇</span>@else<span class="w-4 inline-block"></span>@endif
                                 <span class="text-sm {{ $match->ganador_id === $match->jugador1_id ? 'font-bold text-white' : 'text-white/70' }}">
-                                    {{ $match->jugador1->apellido }}, {{ $match->jugador1->nombre }}
+                                    {{ $match->jugador1->apellido }}@unless($dobles), {{ $match->jugador1->nombre }}@endunless
                                 </span>
                             </div>
                             <div class="text-xs text-white/40 pl-6">vs</div>
                             <div class="flex items-center gap-2">
                                 @if($match->ganador_id === $match->jugador2_id)<span class="text-yellow-400 text-xs">🥇</span>@else<span class="w-4 inline-block"></span>@endif
                                 <span class="text-sm {{ $match->ganador_id === $match->jugador2_id ? 'font-bold text-white' : 'text-white/70' }}">
-                                    {{ $match->jugador2->apellido }}, {{ $match->jugador2->nombre }}
+                                    {{ $match->jugador2->apellido }}@unless($dobles), {{ $match->jugador2->nombre }}@endunless
                                 </span>
                             </div>
                         </div>

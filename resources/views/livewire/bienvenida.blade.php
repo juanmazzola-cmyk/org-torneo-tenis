@@ -217,7 +217,7 @@
                             <div class="px-5 py-3 flex items-center gap-2">
                                 <p class="text-white font-semibold text-sm flex-1 min-w-0">
                                     ⭐ Categoría {{ $master->categoria->nombre }}
-                                    <span class="text-yellow-300 text-xs font-normal ml-1">Master</span>
+                                    <span class="text-yellow-300 text-xs font-normal ml-1">{{ $master->categoria->es_dobles ? 'Dobles' : 'Master' }}</span>
                                 </p>
                                 <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de={{ $panel }}&anio={{ $filtroAnio }}"
                                    onclick="window.location.replace(this.href); return false;"
@@ -579,7 +579,7 @@
                                         <div class="px-3 py-2 flex items-center gap-2">
                                             <p class="text-white text-xs font-semibold flex-1 min-w-0 truncate">
                                                 ⭐ Cat. {{ $master->categoria->nombre }}
-                                                <span class="text-yellow-300/70 font-normal">Master</span>
+                                                <span class="text-yellow-300/70 font-normal">{{ $master->categoria->es_dobles ? 'Dobles' : 'Master' }}</span>
                                             </p>
                                             <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de="
                                                onclick="window.location.replace(this.href); return false;"

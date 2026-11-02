@@ -51,10 +51,20 @@ class MasterDetalle extends Component
     public ?int $retirarGrupoId   = null;
     public ?int $retirarJugadorId = null;
 
+    // Dobles: empate total entre los mejores segundos (se elige a mano)
+    public bool  $modalEmpate    = false;
+    public array $empateSegundos = [];
+
     public function mount(Torneo $torneo, Master $master): void
     {
         $this->torneo = $torneo;
         $this->master = $master;
+    }
+
+    /** Formato de dobles: 2 a 4 zonas de 3 o 4 parejas (ver Master::clasificacionDobles()) */
+    private function esDobles(): bool
+    {
+        return (bool) $this->master->categoria->es_dobles;
     }
 
     // ── Asignar jugador ────────────────────────────────────────────────
@@ -77,9 +87,16 @@ class MasterDetalle extends Component
             return;
         }
 
-        $otroGrupo = $this->master->grupos()->where('id', '!=', $this->asignarGrupoId)->first();
-        if ($otroGrupo?->jugadoresGrupo()->where('jugador_id', $jugadorId)->exists()) {
-            session()->flash('error', 'El jugador ya está en la otra zona.');
+        // Zona de 3 (dobles): con partidos generados no se regeneran solos, así que no se puede cambiar
+        if ($grupo->esDeTres()) {
+            session()->flash('error', 'Zona de 3 con partidos generados: para cambiar una pareja, quitala (✕) y volvé a asignarla.');
+            $this->resetAsignar();
+            return;
+        }
+
+        $otrosGrupos = $this->master->grupos()->where('id', '!=', $this->asignarGrupoId)->pluck('id');
+        if (MasterJugadorGrupo::whereIn('grupo_id', $otrosGrupos)->where('jugador_id', $jugadorId)->exists()) {
+            session()->flash('error', $this->esDobles() ? 'La pareja ya está en otra zona.' : 'El jugador ya está en la otra zona.');
             $this->resetAsignar();
             return;
         }
@@ -216,7 +233,9 @@ class MasterDetalle extends Component
         }
 
         if (!$grupo->jornada1Completa()) {
-            return 'Primero hay que terminar la Jornada 1 de la zona (los 2 partidos con resultado).';
+            return $grupo->esDeTres()
+                ? 'Primero hay que terminar la Jornada 1 de la zona (el partido con resultado).'
+                : 'Primero hay que terminar la Jornada 1 de la zona (los 2 partidos con resultado).';
         }
 
         $jg = $grupo->jugadoresGrupo()->where('jugador_id', $jugadorId)->first();
@@ -335,8 +354,13 @@ class MasterDetalle extends Component
 
     // ── Fase Final ─────────────────────────────────────────────────────
 
-    public function generarFaseFinal(): void
+    public function generarFaseFinal(?int $mejorSegundoElegido = null): void
     {
+        if ($this->esDobles()) {
+            $this->generarFaseFinalDobles($mejorSegundoElegido);
+            return;
+        }
+
         $grupos = $this->master->grupos()->get();
         if ($grupos->count() !== 2) return;
 
@@ -392,6 +416,62 @@ class MasterDetalle extends Component
 
         $this->master->update(['estado' => 'en_curso']);
         session()->flash('ok', 'Fase final generada. Ingresá los resultados de las semifinales.');
+    }
+
+    /** $mejorSegundoElegido: elección manual cuando hay empate total entre los mejores segundos */
+    private function generarFaseFinalDobles(?int $mejorSegundoElegido): void
+    {
+        $grupos = $this->master->grupos()->get();
+        if ($grupos->count() < 2 || $grupos->count() > 4) {
+            session()->flash('error', 'El formato de dobles necesita de 2 a 4 zonas.');
+            return;
+        }
+
+        foreach ($grupos as $g) {
+            if (!$g->estaCompleto()) {
+                session()->flash('error', 'Completá todos los partidos de las zonas primero.');
+                return;
+            }
+        }
+
+        $clasificacion = $this->master->clasificacionDobles($mejorSegundoElegido);
+
+        if ($clasificacion['empatados']) {
+            $this->empateSegundos = $clasificacion['empatados'];
+            $this->modalEmpate    = true;
+            return;
+        }
+
+        if (!$clasificacion['semis']) {
+            session()->flash('error', 'No se pudieron determinar los clasificados.');
+            return;
+        }
+
+        $this->limpiarFaseFinal();
+
+        foreach ($clasificacion['semis'] as $i => [$j1, $j2]) {
+            MasterFinal::create([
+                'master_id'   => $this->master->id,
+                'tipo'        => 'semifinal_' . ($i + 1),
+                'jugador1_id' => $j1,
+                'jugador2_id' => $j2,
+            ]);
+        }
+
+        MasterFinal::create([
+            'master_id' => $this->master->id,
+            'tipo'      => 'final',
+        ]);
+
+        $this->master->update(['estado' => 'en_curso']);
+        $this->resetEmpate();
+        session()->flash('ok', 'Fase final generada. Ingresá los resultados de las semifinales.');
+    }
+
+    private function resetEmpate(): void
+    {
+        $this->modalEmpate    = false;
+        $this->empateSegundos = [];
     }
 
     public function abrirResultadoFinal(int $finalId): void
@@ -656,6 +736,7 @@ class MasterDetalle extends Component
         $this->resetRetirar();
         $this->resetResultado();
         $this->resetResultadoFinal();
+        $this->resetEmpate();
     }
 
     // ── Render ─────────────────────────────────────────────────────────
@@ -710,14 +791,23 @@ class MasterDetalle extends Component
             ->orderByRaw("FIELD(tipo, 'semifinal_1', 'semifinal_2', 'final')")
             ->get();
 
-        $ambasZonasCompletas = $grupos->count() === 2
-            && $grupos->every(fn($g) => $g->estaCompleto());
+        $dobles        = $this->esDobles();
+        $clasificacion = $dobles ? $this->master->clasificacionDobles() : null;
+
+        // En dobles "ambas" son todas las zonas (2 a 4)
+        $ambasZonasCompletas = $dobles
+            ? $clasificacion['completo']
+            : $grupos->count() === 2 && $grupos->every(fn($g) => $g->estaCompleto());
+
+        $empateCandidatos = $this->modalEmpate && $clasificacion
+            ? collect($clasificacion['segundos'])->filter(fn($s) => in_array($s['jugador']->id, $this->empateSegundos))->values()
+            : collect();
 
         return view('livewire.master-detalle', compact(
             'grupos', 'posiciones',
             'jugadoresDisponibles', 'jugadoresAsignados',
             'partidoActivo', 'faseFinal', 'finalActiva',
-            'ambasZonasCompletas'
+            'ambasZonasCompletas', 'dobles', 'clasificacion', 'empateCandidatos'
         ))->layout('layouts.app');
     }
 }

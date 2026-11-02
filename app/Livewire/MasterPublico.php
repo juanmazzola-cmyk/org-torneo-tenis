@@ -39,7 +39,10 @@ class MasterPublico extends Component
             ->orderByRaw("FIELD(tipo, 'semifinal_1', 'semifinal_2', 'final')")
             ->get();
 
-        return view('livewire.master-publico', compact('grupos', 'posiciones', 'faseFinal'))
+        $dobles        = (bool) $this->master->categoria->es_dobles;
+        $clasificacion = $dobles ? $this->master->clasificacionDobles() : null;
+
+        return view('livewire.master-publico', compact('grupos', 'posiciones', 'faseFinal', 'dobles', 'clasificacion'))
             ->layout('layouts.publica');
     }
 }
