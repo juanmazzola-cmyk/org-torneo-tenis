@@ -179,7 +179,7 @@ class TorneoDetalle extends Component
 
         if ($dobles) {
             $master->crearGrupos((int) $this->masterZonas);
-            session()->flash('ok', "Master de dobles creado con {$this->masterZonas} zonas. Asigná las parejas a cada zona (3 o 4 por zona).");
+            session()->flash('ok', "Torneo de dobles creado con {$this->masterZonas} zonas. Asigná las parejas a cada zona (3 o 4 por zona).");
         } else {
             $master->crearGrupos();
             session()->flash('ok', 'Master creado. Asigná los jugadores a cada zona.');

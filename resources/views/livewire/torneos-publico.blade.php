@@ -47,7 +47,7 @@
                                 <a href="{{ route('live.master', [$torneo->id, $master->id]) }}" wire:navigate
                                    class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
                                           text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
-                                    Ver Master
+                                    {{ $master->categoria->es_dobles ? 'Ver Torneo' : 'Ver Master' }}
                                 </a>
                             </div>
                         @endforeach

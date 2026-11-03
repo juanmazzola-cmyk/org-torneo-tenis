@@ -223,7 +223,7 @@
                                    onclick="window.location.replace(this.href); return false;"
                                    class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40
                                           text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
-                                    Ver Master
+                                    {{ $master->categoria->es_dobles ? 'Ver Torneo' : 'Ver Master' }}
                                 </a>
                             </div>
                         @endforeach
@@ -572,7 +572,7 @@
                         </div>
                         @if(($torneo->tipo ?? 'normal') === 'master')
                             @if($torneo->masters->isEmpty())
-                                <div class="px-3 py-2 text-yellow-300/60 text-xs italic">⭐ Master — Sin categorías configuradas aún.</div>
+                                <div class="px-3 py-2 text-yellow-300/60 text-xs italic">⭐ Sin categorías configuradas aún.</div>
                             @else
                                 <div class="divide-y divide-white/10">
                                     @foreach($torneo->masters as $master)
@@ -584,7 +584,7 @@
                                             <a href="{{ route('live.master', [$torneo->id, $master->id]) }}?de="
                                                onclick="window.location.replace(this.href); return false;"
                                                class="bg-yellow-400/20 hover:bg-yellow-400/40 border border-yellow-300/40 text-yellow-200 text-xs font-bold px-4 py-2 rounded-lg transition shrink-0">
-                                                Ver Master
+                                                {{ $master->categoria->es_dobles ? 'Ver Torneo' : 'Ver Master' }}
                                             </a>
                                         </div>
                                     @endforeach
