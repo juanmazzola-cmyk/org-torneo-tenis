@@ -26,7 +26,8 @@
             $partidos       = $grupo->partidos->groupBy('jornada');
             $pos            = $posiciones[$grupo->id] ?? [];
             $hayPartidos    = $grupo->partidos->whereNotNull('ganador_id')->isNotEmpty();
-            $descansos      = $dobles && $grupo->partidos->count() === 3 ? $grupo->descansos() : [];
+            $esDeTres       = $dobles && $grupo->partidos->count() === 3;
+            $descansos      = $esDeTres ? $grupo->descansos() : [];
         @endphp
 
         <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden">
@@ -42,8 +43,8 @@
                 @if($matchesJornada->isNotEmpty())
                 <div class="mb-2">
                     <p class="text-white/50 text-xs mb-1">Jornada {{ $jornada }}</p>
-                    @if(isset($descansos[$jornada]))
-                    <p class="text-white/40 text-xs italic mb-1">Descansa: {{ $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido }}</p>
+                    @if(array_key_exists($jornada, $descansos))
+                    <p class="text-white/40 text-xs italic mb-1">Descansa: {{ $descansos[$jornada] ? $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido : 'A definir' }}</p>
                     @endif
                     @foreach($matchesJornada as $partido)
                     @if($partido->jugador1_id && $partido->jugador2_id)
@@ -62,6 +63,10 @@
                         @else
                             <span class="text-xs text-white/30 ml-2 shrink-0 italic">Pendiente</span>
                         @endif
+                    </div>
+                    @elseif($esDeTres)
+                    <div class="py-1.5 border-b border-white/10 last:border-0">
+                        <span class="text-xs text-white/30 italic">A definir</span>
                     </div>
                     @endif
                     @endforeach

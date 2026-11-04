@@ -42,10 +42,11 @@
             $pos            = $posiciones[$grupo->id] ?? [];
             $hayPartidos    = $grupo->partidos->isNotEmpty();
             $tieneRetirado  = $grupo->jugadoresGrupo->contains('retirado', true);
-            // Zona de 3 (dobles): 3 partidos de calendario fijo, J1 nunca se bloquea
+            // Zona de 3 (dobles): 3 partidos, J2/J3 dependen de J1. J1 se bloquea con resultados en J2/J3
+            // siempre en zona de 3, y en zona de 4 solo con un retirado (= MasterGrupo::jornada1Bloqueada())
             $esDeTres       = $grupo->partidos->count() === 3;
             $titulares      = $grupo->jugadoresGrupo->whereNull('reemplaza_a_id')->count();
-            $j1Bloqueada    = !$esDeTres && $tieneRetirado
+            $j1Bloqueada    = ($esDeTres || $tieneRetirado)
                 && $grupo->partidos->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->isNotEmpty();
             $maxPos         = max(4, $jugadoresGrupo->keys()->max() ?? 0);
             $descansos      = $esDeTres ? $grupo->descansos() : [];
@@ -124,8 +125,8 @@
                 @php $matchesJornada = $partidos->get($jornada, collect()); @endphp
                 <div class="mb-3">
                     <div class="text-xs font-bold text-gray-500 uppercase mb-1">Jornada {{ $jornada }}</div>
-                    @if(isset($descansos[$jornada]))
-                    <div class="text-xs text-gray-400 italic mb-1">Descansa: {{ $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido }}</div>
+                    @if(array_key_exists($jornada, $descansos))
+                    <div class="text-xs text-gray-400 italic mb-1">Descansa: {{ $descansos[$jornada] ? $grupo->jugadoresGrupo->firstWhere('jugador_id', $descansos[$jornada])?->jugador->apellido : 'A definir' }}</div>
                     @endif
                     @foreach($matchesJornada as $partido)
                     <div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
@@ -143,7 +144,9 @@
                                 @endif
                             @else
                                 <span class="text-sm text-gray-400 italic">
-                                    @if($jornada == 1)
+                                    @if($esDeTres)
+                                        A definir
+                                    @elseif($jornada == 1)
                                         Por definir
                                     @elseif($jornada == 2)
                                         Se define al terminar Jornada 1
@@ -154,7 +157,7 @@
                             @endif
                         </div>
                         @if($jornada == 1 && $j1Bloqueada && $partido->ganador_id)
-                        <span class="text-xs text-gray-400 ml-2 shrink-0" title="Zona con retirado y resultados en J2/J3">🔒</span>
+                        <span class="text-xs text-gray-400 ml-2 shrink-0" title="{{ $esDeTres ? 'Hay resultados en J2/J3: anulalos primero para corregir J1' : 'Zona con retirado y resultados en J2/J3' }}">🔒</span>
                         @elseif($partido->jugador1_id && $partido->jugador2_id)
                         <div class="flex items-center gap-1 ml-2 shrink-0">
                             <button wire:click="abrirResultado({{ $partido->id }})"

@@ -76,20 +76,26 @@ class MasterGrupo extends Model
     }
 
     /**
-     * Zona de 3 (solo dobles): calendario fijo J1 1-2, J2 2-3, J3 1-3 (en orden de posición),
-     * descansa una pareja por jornada. No depende de resultados, así que no hay cruces que rearmar.
+     * Zona de 3 (solo dobles): J1 pareja 1 vs pareja 2 (descansa la 3). J2 y J3 se crean vacías
+     * y se completan al cargar J1 (ver actualizarCrucesDeTres()), igual que en la zona de 4.
      */
     private function generarPartidosDeTres($jugadores): void
     {
         $this->partidos()->delete();
 
-        foreach ([1 => [0, 1], 2 => [1, 2], 3 => [0, 2]] as $jornada => [$a, $b]) {
+        MasterPartido::create([
+            'grupo_id'    => $this->id,
+            'jornada'     => 1,
+            'orden'       => 1,
+            'jugador1_id' => $jugadores[0]->jugador_id,
+            'jugador2_id' => $jugadores[1]->jugador_id,
+        ]);
+
+        foreach ([2, 3] as $jornada) {
             MasterPartido::create([
-                'grupo_id'    => $this->id,
-                'jornada'     => $jornada,
-                'orden'       => 1,
-                'jugador1_id' => $jugadores[$a]->jugador_id,
-                'jugador2_id' => $jugadores[$b]->jugador_id,
+                'grupo_id' => $this->id,
+                'jornada'  => $jornada,
+                'orden'    => 1,
             ]);
         }
     }
@@ -103,30 +109,43 @@ class MasterGrupo extends Model
         return $this->partidos()->count() === 3;
     }
 
-    /** Zona de 3: [jornada => jugador_id que descansa], con el suplente en lugar del lesionado */
+    /**
+     * Zona de 3: [jornada => jugador_id que descansa | null], con el suplente en lugar del lesionado.
+     * Descansa la pareja que no juega el partido de esa jornada; null si el partido todavía
+     * está vacío (J2/J3 antes de cargar J1): la vista muestra "A definir".
+     */
     public function descansos(): array
     {
         if (!$this->esDeTres()) return [];
 
         $mapa = $this->reemplazos();
         $real = fn($id) => $mapa[$id] ?? $id;
-        $porJornada = $this->partidos()->get()->keyBy('jornada')
-            ->map(fn($p) => [$real($p->jugador1_id), $real($p->jugador2_id)]);
+        $parejas = $this->titulares()->map($real)->all();
 
-        // Descansa en una jornada quien juega en las otras dos
         $res = [];
-        foreach ([1, 2, 3] as $jornada) {
-            $otras = $porJornada->except($jornada)->values();
-            if ($otras->count() !== 2) continue;
-            $comun = array_values(array_intersect($otras[0], $otras[1]));
-            if ($comun) $res[$jornada] = $comun[0];
+        foreach ($this->partidos()->get() as $p) {
+            $res[$p->jornada] = null;
+            if (!$p->jugador1_id || !$p->jugador2_id) continue;
+            $resto = array_values(array_diff($parejas, [$real($p->jugador1_id), $real($p->jugador2_id)]));
+            if (count($resto) === 1) $res[$p->jornada] = $resto[0];
         }
         return $res;
+    }
+
+    /** Ids de los jugadores originales de la zona (sin suplentes), en orden de posición */
+    private function titulares()
+    {
+        return $this->jugadoresGrupo()->whereNull('reemplaza_a_id')->pluck('jugador_id');
     }
 
     /** Asigna jugadores a jornadas 2 y 3 según resultados de jornada 1 */
     public function actualizarCruces(): void
     {
+        if ($this->esDeTres()) {
+            $this->actualizarCrucesDeTres();
+            return;
+        }
+
         $j1 = $this->partidos()->where('jornada', 1)->orderBy('orden')->get();
         if ($j1->count() !== 2) return;
 
@@ -153,6 +172,30 @@ class MasterGrupo extends Model
             ->update(['jugador1_id' => $l1, 'jugador2_id' => $w2, 'resultado' => null, 'ganador_id' => null]);
 
         // Los cruces se arman con los ids de J1; si hubo retiros, el suplente ocupa el lugar
+        $this->aplicarReemplazos();
+    }
+
+    /**
+     * Zona de 3: J2 pareja 3 vs perdedor de J1 (descansa el ganador),
+     * J3 ganador de J1 vs pareja 3 (descansa el perdedor). Un W.O. en J1 también define.
+     */
+    private function actualizarCrucesDeTres(): void
+    {
+        $m1 = $this->partidos()->where('jornada', 1)->first();
+        if (!$m1?->ganador_id) return;
+
+        $ganador  = $m1->ganador_id;
+        $perdedor = $m1->jugador1_id == $ganador ? $m1->jugador2_id : $m1->jugador1_id;
+
+        // La pareja 3 es la titular que no jugó J1 (si se retiró, aplicarReemplazos pone al suplente)
+        $tercera = $this->titulares()->first(fn($id) => $id != $m1->jugador1_id && $id != $m1->jugador2_id);
+        if (!$tercera) return;
+
+        $this->partidos()->where('jornada', 2)
+            ->update(['jugador1_id' => $tercera, 'jugador2_id' => $perdedor, 'resultado' => null, 'ganador_id' => null]);
+        $this->partidos()->where('jornada', 3)
+            ->update(['jugador1_id' => $ganador, 'jugador2_id' => $tercera, 'resultado' => null, 'ganador_id' => null]);
+
         $this->aplicarReemplazos();
     }
 
@@ -201,22 +244,18 @@ class MasterGrupo extends Model
     }
 
     /**
-     * Con un retirado en la zona, J1 queda congelada si ya hay resultados en J2/J3.
-     * En una zona de 3 no: J2/J3 no dependen de J1.
+     * J1 queda congelada si ya hay resultados en J2/J3: en la zona de 4 solo con un retirado;
+     * en la zona de 3 siempre (hay que anular J2/J3 primero, que sí está permitido).
      */
     public function jornada1Bloqueada(): bool
     {
-        return !$this->esDeTres()
-            && $this->tieneRetirado()
+        return ($this->esDeTres() || $this->tieneRetirado())
             && $this->partidos()->whereIn('jornada', [2, 3])->whereNotNull('ganador_id')->exists();
     }
 
     /** Limpia jornadas 2 y 3 (cuando se anula un resultado de jornada 1) */
     public function limpiarCruces(): void
     {
-        // En una zona de 3 los cruces son fijos: limpiarlos dejaría J2/J3 sin jugadores para siempre
-        if ($this->esDeTres()) return;
-
         $this->partidos()->whereIn('jornada', [2, 3])->update([
             'jugador1_id' => null,
             'jugador2_id' => null,

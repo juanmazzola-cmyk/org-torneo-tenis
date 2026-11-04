@@ -264,7 +264,7 @@ class MasterDetalle extends Component
         $partido = MasterPartido::findOrFail($partidoId);
 
         if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
-            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
             return;
         }
 
@@ -307,7 +307,7 @@ class MasterDetalle extends Component
         $esJornada1  = $partido->jornada === 1;
 
         if ($esJornada1 && $partido->grupo->jornada1Bloqueada()) {
-            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
             $this->resetResultado();
             return;
         }
@@ -336,7 +336,7 @@ class MasterDetalle extends Component
         $partido = MasterPartido::findOrFail($partidoId);
 
         if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
-            session()->flash('error', 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.');
+            session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
             return;
         }
 
@@ -350,6 +350,14 @@ class MasterDetalle extends Component
         $partido->update(['resultado' => null, 'ganador_id' => null]);
         $this->recalcularRankingMaster();
         session()->flash('ok', 'Resultado anulado.');
+    }
+
+    private function mensajeJ1Bloqueada(MasterGrupo $grupo): string
+    {
+        // Zona de 3: J2/J3 dependen del resultado de J1 (anular J2/J3 sí está permitido)
+        return $grupo->esDeTres()
+            ? 'Ya hay resultados en J2/J3, que dependen de J1: primero anulá los resultados de J2 y J3 y después corregí la Jornada 1.'
+            : 'La zona tiene un retirado y ya hay resultados en J2/J3: la Jornada 1 no se puede modificar.';
     }
 
     // ── Fase Final ─────────────────────────────────────────────────────
