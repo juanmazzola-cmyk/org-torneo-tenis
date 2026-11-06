@@ -17,6 +17,9 @@ composer run-script setup
 composer run dev
 
 # Run tests (clears config cache first)
+# OJO: phpunit corre en SQLite :memory: y hoy solo están los tests de ejemplo. El código usa
+# FIELD() (solo MySQL) para ordenar master_finales, así que lo de Master no se puede probar
+# ahí: usar una copia MySQL de la base (ver "Probar contra una copia de la base").
 composer run test
 
 # Production asset build
@@ -25,7 +28,18 @@ npm run build
 
 ## Architecture
 
-**Stack:** Laravel 12 + Livewire 4 + Tailwind CSS 4 + Vite. SQLite database (local dev). No Eloquent ORM relationships are heavily used — raw queries and service classes handle most logic.
+**Stack:** Laravel 12 + Livewire 4 + Tailwind CSS 4 + Vite. MySQL tanto en local (XAMPP, base `torneo_tenis`, `APP_URL=http://localhost/org-torneo-tenis/public`) como en producción. No Eloquent ORM relationships are heavily used — raw queries and service classes handle most logic.
+
+### Probar contra una copia de la base
+
+Para probar sin tocar `torneo_tenis`, copiarla a una base aparte (los binarios están en `C:\xampp\mysql\bin`): `mysqldump -uroot torneo_tenis > dump.sql`, crear la base nueva (`utf8mb4_unicode_ci`) e importarlo. Variables de entorno reales (`DB_DATABASE=...`) pisan al `.env`, pero:
+
+- **`php artisan serve` NO pasa `DB_DATABASE` al proceso hijo** (sin `--no-reload` solo pasa unas pocas variables): terminaría sirviendo la base de desarrollo. Usar el servidor de PHP directo, **parado en `public/`** (el router toma la carpeta actual como public):
+  `cd public && DB_DATABASE=<base_copia> php -S 127.0.0.1:8123 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php`
+- **`Livewire::test()` desde un script** (fuera de PHPUnit) devuelve "Not Found" con el `APP_URL` local por la subcarpeta: setear `APP_ENV=testing` y `APP_URL=http://localhost` antes de arrancar la app.
+- Para comparar HTML antes/después: Livewire agrega marcadores vacíos `<!--[if BLOCK]>…<![endif]-->` por cada `@if` nuevo (invisibles; normalizarlos). Justo después de importar una base, consultas sin `orderBy` (ej. partidos de draws en "Mis partidos") pueden cambiar de orden y dar diferencias que no son del cambio.
+- En Git Bash `iconv` no funciona (marca todo como UTF-8 inválido): validar encoding/BOM con PHP (`mb_check_encoding`). El repo guarda los archivos con CRLF (`core.autocrlf=true`); es lo normal.
+- Antes de recompilar CSS conviene chequear si las clases nuevas ya existen en `public/build/assets/*.css`: si están todas, no hace falta `npm run build` (y no hay riesgo de perder clases).
 
 ### Two-panel structure
 
