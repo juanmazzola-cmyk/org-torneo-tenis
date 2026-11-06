@@ -215,6 +215,10 @@ class Bienvenida extends Component
                     })
                     ->whereNotNull('ganador_id')
                     ->whereHas('master.torneo')
+                    // Orden explícito por ronda: sin esto MySQL no garantiza el orden
+                    // (cambió después del ALTER del enum de tipo)
+                    ->orderBy('master_id')
+                    ->orderByRaw('FIELD(tipo, ' . MasterFinal::ORDEN . ')')
                     ->get();
 
                 $todos = collect();

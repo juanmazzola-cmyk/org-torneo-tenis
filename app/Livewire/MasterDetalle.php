@@ -55,6 +55,12 @@ class MasterDetalle extends Component
     public bool  $modalEmpate    = false;
     public array $empateSegundos = [];
 
+    // Dobles con 8 clasificados: empate total en el corte de los mejores terceros (casillas + Confirmar)
+    public bool  $modalEmpateTerceros = false;
+    public array $empateTerceros      = [];
+    public int   $cuposTerceros       = 0;
+    public array $tercerosElegidos    = [];
+
     public function mount(Torneo $torneo, Master $master): void
     {
         $this->torneo = $torneo;
@@ -66,6 +72,17 @@ class MasterDetalle extends Component
     {
         return (bool) $this->master->categoria->es_dobles;
     }
+
+    /**
+     * Dobles: con la fase final generada no se tocan los resultados de zona (cambiarían quién
+     * clasifica y los cruces quedarían viejos). Hay que anular la fase final primero.
+     */
+    private function zonaBloqueadaPorFaseFinal(): bool
+    {
+        return $this->esDobles() && MasterFinal::where('master_id', $this->master->id)->exists();
+    }
+
+    private const MSG_ZONA_BLOQUEADA = 'Hay una fase final generada: anulá la fase final primero.';
 
     // ── Asignar jugador ────────────────────────────────────────────────
 
@@ -263,6 +280,11 @@ class MasterDetalle extends Component
     {
         $partido = MasterPartido::findOrFail($partidoId);
 
+        if ($this->zonaBloqueadaPorFaseFinal()) {
+            session()->flash('error', self::MSG_ZONA_BLOQUEADA);
+            return;
+        }
+
         if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
             session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
             return;
@@ -306,6 +328,12 @@ class MasterDetalle extends Component
 
         $esJornada1  = $partido->jornada === 1;
 
+        if ($this->zonaBloqueadaPorFaseFinal()) {
+            session()->flash('error', self::MSG_ZONA_BLOQUEADA);
+            $this->resetResultado();
+            return;
+        }
+
         if ($esJornada1 && $partido->grupo->jornada1Bloqueada()) {
             session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
             $this->resetResultado();
@@ -334,6 +362,11 @@ class MasterDetalle extends Component
     public function anularResultado(int $partidoId): void
     {
         $partido = MasterPartido::findOrFail($partidoId);
+
+        if ($this->zonaBloqueadaPorFaseFinal()) {
+            session()->flash('error', self::MSG_ZONA_BLOQUEADA);
+            return;
+        }
 
         if ($partido->jornada === 1 && $partido->grupo->jornada1Bloqueada()) {
             session()->flash('error', $this->mensajeJ1Bloqueada($partido->grupo));
@@ -426,9 +459,42 @@ class MasterDetalle extends Component
         session()->flash('ok', 'Fase final generada. Ingresá los resultados de las semifinales.');
     }
 
-    /** $mejorSegundoElegido: elección manual cuando hay empate total entre los mejores segundos */
-    private function generarFaseFinalDobles(?int $mejorSegundoElegido): void
+    /** Modal de empate de terceros (8 clasificados): confirma las parejas marcadas con las casillas */
+    public function confirmarTerceros(): void
     {
+        $elegidos = array_values(array_unique(array_map('intval', $this->tercerosElegidos)));
+        if (count($elegidos) !== $this->cuposTerceros || array_diff($elegidos, $this->empateTerceros)) {
+            $this->addError('tercerosElegidos', "Marcá exactamente {$this->cuposTerceros} " . ($this->cuposTerceros === 1 ? 'pareja.' : 'parejas.'));
+            return;
+        }
+        $this->generarFaseFinalDobles(null, $elegidos);
+    }
+
+    /**
+     * Dobles: borra la fase final completa (cuartos, semis y final con sus resultados) y deja el
+     * Master en 'pendiente'. Los resultados de zona no se tocan. Es el paso previo para poder
+     * corregir un resultado de zona; después se vuelve a generar la fase final.
+     */
+    public function anularFaseFinal(): void
+    {
+        if (!$this->esDobles()) return;
+
+        $this->limpiarFaseFinal();
+        $this->recalcularRankingMaster();
+        session()->flash('ok', 'Fase final anulada. Ya podés corregir los resultados de zona y volver a generarla.');
+    }
+
+    /**
+     * $mejorSegundoElegido: elección manual cuando hay empate total entre los mejores segundos.
+     * $tercerosElegidos: ídem para los mejores terceros (8 clasificados).
+     */
+    private function generarFaseFinalDobles(?int $mejorSegundoElegido, array $tercerosElegidos = []): void
+    {
+        if ($this->master->clasificanOcho()) {
+            $this->generarCuartos($tercerosElegidos);
+            return;
+        }
+
         $grupos = $this->master->grupos()->get();
         if ($grupos->count() < 2 || $grupos->count() > 4) {
             session()->flash('error', 'El formato de dobles necesita de 2 a 4 zonas.');
@@ -476,10 +542,67 @@ class MasterDetalle extends Component
         session()->flash('ok', 'Fase final generada. Ingresá los resultados de las semifinales.');
     }
 
+    /** Dobles con 8 clasificados: 4 cuartos con las parejas, semis y final vacías */
+    private function generarCuartos(array $tercerosElegidos): void
+    {
+        $grupos = $this->master->grupos()->get();
+        if (!in_array($grupos->count(), [3, 4], true)) {
+            session()->flash('error', 'Con 8 clasificados hacen falta 3 o 4 zonas.');
+            return;
+        }
+
+        if ($grupos->contains(fn($g) => !$g->estaCompleto())) {
+            session()->flash('error', 'Completá todos los partidos de las zonas primero.');
+            return;
+        }
+
+        $clasificacion = $this->master->clasificacionDobles(null, $tercerosElegidos);
+
+        if ($clasificacion['empate_terceros']) {
+            $this->empateTerceros      = $clasificacion['empate_terceros'];
+            $this->cuposTerceros       = $clasificacion['cupos_terceros'];
+            $this->tercerosElegidos    = [];
+            $this->resetErrorBag('tercerosElegidos');
+            $this->modalEmpateTerceros = true;
+            return;
+        }
+
+        if (!$clasificacion['cuartos']) {
+            session()->flash('error', 'No se pudieron determinar los clasificados.');
+            return;
+        }
+
+        DB::transaction(function () use ($clasificacion) {
+            $this->limpiarFaseFinal();
+
+            foreach ($clasificacion['cuartos'] as $i => [$j1, $j2]) {
+                MasterFinal::create([
+                    'master_id'   => $this->master->id,
+                    'tipo'        => 'cuartos_' . ($i + 1),
+                    'jugador1_id' => $j1,
+                    'jugador2_id' => $j2,
+                ]);
+            }
+            foreach (['semifinal_1', 'semifinal_2', 'final'] as $tipo) {
+                MasterFinal::create(['master_id' => $this->master->id, 'tipo' => $tipo]);
+            }
+
+            $this->master->update(['estado' => 'en_curso']);
+        });
+
+        $this->resetEmpate();
+        session()->flash('ok', 'Fase final generada. Ingresá los resultados de los cuartos de final.');
+    }
+
     private function resetEmpate(): void
     {
         $this->modalEmpate    = false;
         $this->empateSegundos = [];
+
+        $this->modalEmpateTerceros = false;
+        $this->empateTerceros      = [];
+        $this->cuposTerceros       = 0;
+        $this->tercerosElegidos    = [];
     }
 
     public function abrirResultadoFinal(int $finalId): void
@@ -526,10 +649,20 @@ class MasterDetalle extends Component
                 ->update(['jugador1_id' => null, 'jugador2_id' => null, 'resultado' => null, 'ganador_id' => null]);
         }
 
+        // Cuartos (dobles con 8): se vacían su semi y la final, y se vuelve a armar la semi
+        if ($final->esCuartos()) {
+            $this->vaciarDesdeCuartos($final);
+        }
+
         $final->update([
             'resultado'  => trim($this->resultado),
             'ganador_id' => $this->ganadorId,
         ]);
+
+        if ($final->esCuartos()) {
+            $this->actualizarSemis();
+            $this->recalcularRankingMaster();
+        }
 
         // Si era una semi, intentar armar la final y actualizar ranking parcial
         if (in_array($final->tipo, ['semifinal_1', 'semifinal_2'])) {
@@ -562,9 +695,53 @@ class MasterDetalle extends Component
             $this->master->update(['estado' => 'en_curso']);
         }
 
+        if ($final->esCuartos()) {
+            $this->vaciarDesdeCuartos($final);
+        }
+
         $final->update(['resultado' => null, 'ganador_id' => null]);
+
+        if ($final->esCuartos()) {
+            $this->actualizarSemis();
+        }
+
         $this->recalcularRankingMaster();
         session()->flash('ok', 'Resultado anulado.');
+    }
+
+    /**
+     * Al editar o anular un cuarto: la semi a la que alimenta pierde su resultado y la final se
+     * vacía entera (como pasa hoy al editar una semi). Si el Master estaba finalizado vuelve a en curso.
+     */
+    private function vaciarDesdeCuartos(MasterFinal $cuarto): void
+    {
+        [$semi] = MasterFinal::CUARTOS_A_SEMI[$cuarto->tipo];
+
+        MasterFinal::where('master_id', $this->master->id)
+            ->where('tipo', $semi)
+            ->update(['resultado' => null, 'ganador_id' => null]);
+
+        MasterFinal::where('master_id', $this->master->id)
+            ->where('tipo', 'final')
+            ->update(['jugador1_id' => null, 'jugador2_id' => null, 'resultado' => null, 'ganador_id' => null]);
+
+        if ($this->master->estado === 'finalizado') {
+            $this->master->update(['estado' => 'en_curso']);
+        }
+    }
+
+    /** Dobles con 8: cada lugar de las semis es el ganador de su cuarto (null si no se jugó) */
+    private function actualizarSemis(): void
+    {
+        $cuartos = MasterFinal::where('master_id', $this->master->id)
+            ->whereIn('tipo', array_keys(MasterFinal::CUARTOS_A_SEMI))
+            ->get()->keyBy('tipo');
+
+        foreach (MasterFinal::CUARTOS_A_SEMI as $tipoCuarto => [$semi, $lugar]) {
+            MasterFinal::where('master_id', $this->master->id)
+                ->where('tipo', $semi)
+                ->update([$lugar => $cuartos[$tipoCuarto]?->ganador_id]);
+        }
     }
 
     private function actualizarFinal(): void
@@ -604,6 +781,14 @@ class MasterDetalle extends Component
             $semi1?->jugador1_id, $semi1?->jugador2_id,
             $semi2?->jugador1_id, $semi2?->jugador2_id,
         ]));
+
+        // Resguardo: 8 clasificados es solo para categorías sin ranking (no se llega acá), pero si
+        // alguna vez se llegara, los de cuartos tampoco son "no clasificados"
+        if ($this->master->clasificanOcho()) {
+            $enFaseFinal = array_merge($enFaseFinal, MasterFinal::where('master_id', $this->master->id)
+                ->whereIn('tipo', array_keys(MasterFinal::CUARTOS_A_SEMI))
+                ->get()->flatMap(fn($f) => [$f->jugador1_id, $f->jugador2_id])->filter()->all());
+        }
 
         if ($final?->ganador_id) {
             $puntos[$final->ganador_id]  = 100;
@@ -796,7 +981,7 @@ class MasterDetalle extends Component
 
         $faseFinal = MasterFinal::with(['jugador1', 'jugador2', 'ganador'])
             ->where('master_id', $this->master->id)
-            ->orderByRaw("FIELD(tipo, 'semifinal_1', 'semifinal_2', 'final')")
+            ->orderByRaw('FIELD(tipo, ' . MasterFinal::ORDEN . ')')
             ->get();
 
         $dobles        = $this->esDobles();
@@ -811,11 +996,15 @@ class MasterDetalle extends Component
             ? collect($clasificacion['segundos'])->filter(fn($s) => in_array($s['jugador']->id, $this->empateSegundos))->values()
             : collect();
 
+        $empateTercerosCandidatos = $this->modalEmpateTerceros && $clasificacion
+            ? collect($clasificacion['terceros'] ?? [])->filter(fn($s) => in_array($s['jugador']->id, $this->empateTerceros))->values()
+            : collect();
+
         return view('livewire.master-detalle', compact(
             'grupos', 'posiciones',
             'jugadoresDisponibles', 'jugadoresAsignados',
             'partidoActivo', 'faseFinal', 'finalActiva',
-            'ambasZonasCompletas', 'dobles', 'clasificacion', 'empateCandidatos'
+            'ambasZonasCompletas', 'dobles', 'clasificacion', 'empateCandidatos', 'empateTercerosCandidatos'
         ))->layout('layouts.app');
     }
 }

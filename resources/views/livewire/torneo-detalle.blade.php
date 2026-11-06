@@ -360,14 +360,37 @@
                 @if($masterEsDobles)
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad de zonas *</label>
-                    <select wire:model="masterZonas"
+                    <select wire:model.live="masterZonas"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-                        <option value="2">2 zonas (clasifican 1° y 2°)</option>
-                        <option value="3">3 zonas (1° de cada una + mejor 2°)</option>
-                        <option value="4">4 zonas (1° de cada una)</option>
+                        <option value="2">2 zonas</option>
+                        <option value="3">3 zonas</option>
+                        <option value="4">4 zonas</option>
                     </select>
                     @error('masterZonas') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                 </div>
+                @php $conCuartos = in_array($masterZonas, ['3', '4'], true); @endphp
+                @if($conCuartos)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Clasifican *</label>
+                    <select wire:model.live="masterClasifican"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
+                        <option value="4">4 (semifinales)</option>
+                        <option value="8">8 (cuartos de final)</option>
+                    </select>
+                    @error('masterClasifican') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                </div>
+                @endif
+                <p class="text-xs text-gray-500">
+                    @if($masterZonas === '2')
+                        Clasifican el 1° y el 2° de cada zona a semifinales.
+                    @elseif($conCuartos && $masterClasifican === '8')
+                        {{ $masterZonas === '3' ? 'Clasifican el 1° y el 2° de cada zona y los 2 mejores 3° por promedios' : 'Clasifican el 1° y el 2° de cada zona' }}
+                        a cuartos de final. Solo para categorías sin ranking.
+                    @else
+                        {{ $masterZonas === '3' ? 'Clasifican el 1° de cada zona y el mejor 2° por promedios' : 'Clasifica el 1° de cada zona' }}
+                        a semifinales.
+                    @endif
+                </p>
                 @endif
                 <p class="text-xs text-gray-500">⚠️ Si ya existe un master para esa categoría, se reiniciará.</p>
                 <button type="submit"
@@ -384,7 +407,7 @@
                     <div>
                         <span class="font-bold text-gray-800 text-lg">Categoría {{ $master->categoria->nombre }}</span>
                         @if($master->categoria->es_dobles)
-                        <span class="ml-3 text-sm text-gray-500">Dobles · {{ $master->grupos_count }} zonas</span>
+                        <span class="ml-3 text-sm text-gray-500">Dobles · {{ $master->grupos_count }} zonas{{ $master->clasificanOcho() ? ' · 8 clasificados' : '' }}</span>
                         @else
                         <span class="ml-3 text-sm text-gray-500">Master · 2 zonas de 4</span>
                         @endif

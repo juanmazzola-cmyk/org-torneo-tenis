@@ -267,6 +267,13 @@
                     </button>
                 @elseif(!$ambasZonasCompletas && $faseFinal->isEmpty())
                     <span class="text-sm text-gray-400 italic">Completá todas las zonas primero</span>
+                @elseif($dobles)
+                    {{-- Dobles: con fase final los resultados de zona están bloqueados; esto la borra entera --}}
+                    <button wire:click="anularFaseFinal"
+                            wire:confirm="¿Anular la fase final? Se borran todos sus partidos y resultados ({{ $master->clasificanOcho() ? 'cuartos, semifinales y final' : 'semifinales y final' }}). Los resultados de zona no se tocan."
+                            class="text-sm text-red-600 border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition font-medium">
+                        Anular fase final
+                    </button>
                 @endif
             </div>
 
@@ -310,6 +317,46 @@
             </div>
             @endif
 
+            @if($dobles && !empty($clasificacion['terceros']))
+            {{-- Dobles con 8 clasificados y 3 zonas: comparación de terceros por promedios (pasan 2) --}}
+            <div class="mb-5">
+                <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                    Mejores terceros
+                    @unless($clasificacion['completo'])<span class="text-xs font-normal normal-case text-gray-400">(provisorio)</span>@endunless
+                </h3>
+                <p class="text-xs text-gray-400 mb-2">Clasifican 2. Puntos por partido jugado, después % de sets y % de games. El W.O. cuenta como 6-0 6-0.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-green-700 text-white">
+                                <th class="px-2 py-1.5 text-left font-medium">Pareja</th>
+                                <th class="px-2 py-1.5 text-left font-medium">Zona</th>
+                                <th class="px-1 py-1.5 text-center font-medium">PJ</th>
+                                <th class="px-1 py-1.5 text-center font-medium">Pts/PJ</th>
+                                <th class="px-1 py-1.5 text-center font-medium">% Sets</th>
+                                <th class="px-1 py-1.5 text-center font-medium">% Games</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($clasificacion['terceros'] as $s)
+                            <tr class="{{ !empty($s['clasifica']) ? 'bg-yellow-50' : '' }}">
+                                <td class="px-2 py-1.5 font-semibold text-gray-800 leading-tight">
+                                    {{ $s['jugador']->apellido }}
+                                    @if(!empty($s['clasifica']))<span class="text-green-700">✓</span>@endif
+                                </td>
+                                <td class="px-2 py-1.5 text-gray-600">{{ $s['nombre_zona'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ $s['pj'] }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['prom_pts'], 2, ',', '.') }}</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['pct_sets'], 1, ',', '.') }}%</td>
+                                <td class="px-1 py-1.5 text-center text-gray-600">{{ number_format($s['pct_games'], 1, ',', '.') }}%</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             @if($faseFinal->isEmpty())
                 <p class="text-gray-400 text-sm text-center py-4">
                     @if($dobles)
@@ -318,6 +365,68 @@
                     Una vez que ambas zonas estén completas, generá la fase final.
                     @endif
                 </p>
+            @elseif($faseFinal->contains(fn($m) => $m->esCuartos()))
+                {{-- Dobles con 8 clasificados: agrupado por ronda, tarjetas compactas (aptas para celular) --}}
+                @php
+                    $rondas = [
+                        'Cuartos de final' => $faseFinal->filter(fn($m) => $m->esCuartos()),
+                        'Semifinales'      => $faseFinal->whereIn('tipo', ['semifinal_1', 'semifinal_2']),
+                        'Final'            => $faseFinal->where('tipo', 'final'),
+                    ];
+                @endphp
+                <div class="space-y-5">
+                    @foreach($rondas as $titulo => $partidosRonda)
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{{ $titulo }}</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 {{ $titulo === 'Cuartos de final' ? 'lg:grid-cols-4' : '' }} gap-3">
+                            @foreach($partidosRonda as $match)
+                            @php $esFinal = $match->tipo === 'final'; @endphp
+                            <div class="border rounded-xl p-3 {{ $esFinal ? 'border-yellow-400 bg-yellow-50' : 'border-gray-200' }}">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-xs font-bold uppercase tracking-wide {{ $esFinal ? 'text-yellow-600' : 'text-gray-500' }}">
+                                        {{ $match->label() }}
+                                    </span>
+                                    @if($match->jugador1_id && $match->jugador2_id)
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button wire:click="abrirResultadoFinal({{ $match->id }})"
+                                                class="text-xs px-2 py-1 rounded font-medium transition
+                                                    {{ $match->ganador_id ? 'text-blue-600 hover:bg-blue-50' : 'bg-green-600 text-white hover:bg-green-700' }}">
+                                            {{ $match->ganador_id ? 'Editar' : 'Resultado' }}
+                                        </button>
+                                        @if($match->ganador_id)
+                                        <button wire:click="anularResultadoFinal({{ $match->id }})"
+                                                wire:confirm="¿Anular este resultado?{{ $match->esCuartos() ? ' Se borra también el resultado de su semifinal y la final.' : '' }}"
+                                                class="text-xs text-red-500 hover:text-red-700 px-1 py-1 rounded hover:bg-red-50 transition">✕</button>
+                                        @endif
+                                    </div>
+                                    @endif
+                                </div>
+
+                                @if($match->jugador1_id || $match->jugador2_id)
+                                    @foreach([$match->jugador1, $match->jugador2] as $j)
+                                    <div class="flex items-start gap-2 py-0.5">
+                                        <span class="w-4 shrink-0 text-xs">{{ $j && $match->ganador_id === $j->id ? '🥇' : '' }}</span>
+                                        @if($j)
+                                        <span class="text-sm leading-tight {{ $match->ganador_id === $j->id ? 'font-bold text-gray-900' : 'text-gray-600' }}">{{ $j->apellido }}</span>
+                                        @else
+                                        <span class="text-sm text-gray-400 italic">A definir</span>
+                                        @endif
+                                    </div>
+                                    @endforeach
+                                    @if($match->resultado)
+                                    <div class="text-xs font-mono text-gray-500 mt-1 pl-6">{{ $match->resultado }}</div>
+                                    @endif
+                                @else
+                                    <div class="text-sm text-gray-400 italic py-1">
+                                        {{ $esFinal ? 'Se define al terminar las semifinales' : 'Se define al terminar los cuartos' }}
+                                    </div>
+                                @endif
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
             @else
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     @foreach($faseFinal as $match)
@@ -649,6 +758,40 @@
             <div class="flex justify-end mt-4">
                 <button wire:click="cerrarModales"
                         class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- ══ Modal Empate Mejores Terceros (dobles, 8 clasificados) ══════ --}}
+    @if($modalEmpateTerceros)
+    <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+         @keydown.escape.window="$wire.cerrarModales()">
+        <div class="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Empate en los mejores terceros</h3>
+            <p class="text-sm text-gray-500 mb-4">
+                Estas parejas empatan en puntos por partido, % de sets y % de games.
+                Definí por sorteo y marcá {{ $cuposTerceros === 1 ? 'la pareja que clasifica' : "las {$cuposTerceros} parejas que clasifican" }}.
+            </p>
+            <div class="border border-gray-200 rounded-lg divide-y divide-gray-100">
+                @foreach($empateTercerosCandidatos as $s)
+                <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-green-50 transition cursor-pointer">
+                    <input type="checkbox" wire:model.live="tercerosElegidos" value="{{ $s['jugador']->id }}"
+                           class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                    <span class="flex-1 text-sm font-medium text-gray-800">{{ $s['jugador']->apellido }}</span>
+                    <span class="text-xs text-gray-500 shrink-0">{{ $s['nombre_zona'] }}</span>
+                </label>
+                @endforeach
+            </div>
+            @error('tercerosElegidos') <p class="text-red-500 text-xs mt-2">{{ $message }}</p> @enderror
+            <div class="flex justify-end gap-2 mt-4">
+                <button wire:click="cerrarModales"
+                        class="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm">Cancelar</button>
+                <button wire:click="confirmarTerceros"
+                        @disabled(count($tercerosElegidos) !== $cuposTerceros)
+                        class="px-4 py-2 rounded-lg bg-green-700 text-white hover:bg-green-800 text-sm font-medium {{ count($tercerosElegidos) !== $cuposTerceros ? 'opacity-60 cursor-not-allowed' : '' }}">
+                    Confirmar ({{ count($tercerosElegidos) }} de {{ $cuposTerceros }})
+                </button>
             </div>
         </div>
     </div>

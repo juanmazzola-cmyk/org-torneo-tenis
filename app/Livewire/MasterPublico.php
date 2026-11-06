@@ -36,7 +36,7 @@ class MasterPublico extends Component
 
         $faseFinal = MasterFinal::with(['jugador1', 'jugador2', 'ganador'])
             ->where('master_id', $this->master->id)
-            ->orderByRaw("FIELD(tipo, 'semifinal_1', 'semifinal_2', 'final')")
+            ->orderByRaw('FIELD(tipo, ' . MasterFinal::ORDEN . ')')
             ->get();
 
         $dobles        = (bool) $this->master->categoria->es_dobles;

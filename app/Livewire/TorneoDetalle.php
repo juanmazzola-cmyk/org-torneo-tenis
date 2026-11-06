@@ -7,6 +7,7 @@ use App\Models\Jugador;
 use App\Models\Categoria;
 use App\Models\Inscripcion;
 use App\Models\Master;
+use App\Models\MasterFinal;
 use App\Exports\InscripcionesExport;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
@@ -40,6 +41,7 @@ class TorneoDetalle extends Component
     // Para el master
     public string $masterCategoriaId = '';
     public string $masterZonas = '2'; // solo categorías de dobles (2 a 4)
+    public string $masterClasifican = '4'; // dobles con 3 o 4 zonas: 4 (semis) u 8 (cuartos)
 
     protected function rules(): array
     {
@@ -167,25 +169,41 @@ class TorneoDetalle extends Component
             'masterCategoriaId' => 'required|exists:categorias,id',
         ]);
 
-        $dobles = (bool) Categoria::find($this->masterCategoriaId)?->es_dobles;
+        $categoria = Categoria::find($this->masterCategoriaId);
+        $dobles    = (bool) $categoria?->es_dobles;
         if ($dobles) {
             $this->validate(['masterZonas' => 'required|in:2,3,4']);
         }
 
+        // 8 clasificados (cuartos): solo dobles sin ranking con 3 o 4 zonas
+        $clasifican = 4;
+        if ($dobles && in_array($this->masterZonas, ['3', '4'], true)) {
+            $this->validate(['masterClasifican' => 'required|in:4,8']);
+            $clasifican = (int) $this->masterClasifican;
+            if ($clasifican === 8 && !$categoria->sin_ranking) {
+                $this->addError('masterClasifican', 'Con 8 clasificados la categoría tiene que estar marcada "sin ranking".');
+                return;
+            }
+        }
+
         $master = Master::updateOrCreate(
             ['torneo_id' => $this->torneo->id, 'categoria_id' => $this->masterCategoriaId],
-            ['estado' => 'pendiente']
+            ['estado' => 'pendiente', 'clasifican' => $clasifican]
         );
+
+        // Al reiniciar un Master existente, la fase final vieja no se borraba con las zonas
+        MasterFinal::where('master_id', $master->id)->delete();
 
         if ($dobles) {
             $master->crearGrupos((int) $this->masterZonas);
-            session()->flash('ok', "Torneo de dobles creado con {$this->masterZonas} zonas. Asigná las parejas a cada zona (3 o 4 por zona).");
+            $formato = $clasifican === 8 ? ' (clasifican 8, con cuartos de final)' : '';
+            session()->flash('ok', "Torneo de dobles creado con {$this->masterZonas} zonas{$formato}. Asigná las parejas a cada zona (3 o 4 por zona).");
         } else {
             $master->crearGrupos();
             session()->flash('ok', 'Master creado. Asigná los jugadores a cada zona.');
         }
 
-        $this->reset(['masterCategoriaId', 'masterZonas']);
+        $this->reset(['masterCategoriaId', 'masterZonas', 'masterClasifican']);
     }
 
     public function inscribirMasivo(): void
