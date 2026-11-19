@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Resultado;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -408,10 +409,15 @@ class MasterGrupo extends Model
         if (!$resultado) return [0, 0, 0, 0];
 
         $sg = $sp = $gg = $gp = 0;
+        $nroSet = 0;
         foreach (explode(' ', trim($resultado)) as $set) {
             if (!preg_match('/^(\d+)-(\d+)$/', $set, $m)) continue;
             $g1 = (int) $m[1];
             $g2 = (int) $m[2];
+            // Super tie-break: 1 game a 0 para quien lo ganó (el set se cuenta igual)
+            if (Resultado::esSuperTiebreak(++$nroSet, $g1, $g2)) {
+                [$g1, $g2] = $g1 > $g2 ? [1, 0] : [0, 1];
+            }
             $gg += $g1;
             $gp += $g2;
             if ($g1 > $g2) $sg++;

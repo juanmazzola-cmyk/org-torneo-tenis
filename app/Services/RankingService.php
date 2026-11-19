@@ -6,6 +6,7 @@ use App\Models\Partido;
 use App\Models\Ranking;
 use App\Models\Categoria;
 use App\Models\Torneo;
+use App\Support\Resultado;
 use Illuminate\Support\Facades\Cache;
 
 class RankingService
@@ -145,6 +146,7 @@ class RankingService
     {
         $setsGanados = 0; $setsPerdidos = 0;
         $gamesGanados = 0; $gamesPerdidos = 0;
+        $nroSet = 0;
 
         foreach (explode(' ', trim($resultado)) as $set) {
             $set = strtolower($set);
@@ -163,6 +165,11 @@ class RankingService
 
             $ganadorGames  = (int) $m[1]; // primer número = match winner
             $perdedorGames = (int) $m[2]; // segundo número = match loser
+
+            // Super tie-break: 1 game a 0 para quien lo ganó (el set se cuenta igual)
+            if (Resultado::esSuperTiebreak(++$nroSet, $ganadorGames, $perdedorGames)) {
+                [$ganadorGames, $perdedorGames] = $ganadorGames > $perdedorGames ? [1, 0] : [0, 1];
+            }
 
             if ($esGanador) {
                 $gamesGanados  += $ganadorGames;
